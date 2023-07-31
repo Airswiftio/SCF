@@ -27,6 +27,7 @@ pub enum DataKey {
     Owner(i128),
     Supply,
     NFTInfo(i128),
+    OrderInfo,
 }
 
 #[derive(Clone)]

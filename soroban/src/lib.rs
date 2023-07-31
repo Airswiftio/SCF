@@ -11,5 +11,6 @@ mod errors;
 mod balance;
 mod approval;
 mod test;
+mod order_info;
 
 pub use crate::contract::NonFungibleTokenClient;

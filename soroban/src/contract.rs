@@ -1,14 +1,15 @@
-use soroban_sdk::{contractimpl, Env, Symbol, Address, String, panic_with_error};
+use soroban_sdk::{contract, contractimpl, Env, Symbol, Address, String, panic_with_error};
 use crate::interface::{NonFungibleTokenTrait, WriteType};
 use crate::admin::{read_administrator, write_administrator, has_administrator};
-use crate::metadata::{write_name, write_symbol, read_name, read_symbol, read_token_uri, write_token_uri};
+use crate::metadata::{write_name, write_symbol, read_name, read_symbol, read_token_uri, write_token_uri, write_nft_info, read_nft_info};
 use crate::balance::{increment_supply, read_supply};
 use crate::owner::{read_owner, write_owner, check_owner};
 use crate::approval::{write_approval, read_approval, write_approval_all, read_approval_all};
 use crate::event;
 use crate::errors::Error;
-use crate::order_info::{get_order_info,set_order_info};
+use crate::order_info::{write_order_info, read_total_amount};
 
+#[contract]
 pub struct NonFungibleToken;
 
 #[contractimpl]
@@ -104,7 +105,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         increment_supply(&env);
 
         write_token_uri(&env, id, uri);
-        write_NFT_info(&env, id, uri);
+        //write_nft_info(&env, id, uri);
 
         event::mint(&env, to, id)
     }
@@ -114,11 +115,11 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         admin.require_auth();
         
         let id = read_supply(&env);
-        let amount = get_order_info(&env);
+        let amount = read_total_amount(&env);
         write_owner(&env, id, Some(to.clone()));
         increment_supply(&env);
-        write_token_uri(&env, id, uri);
-        write_NFT_info(&env, id, id, amount.totalAmount);
+        write_token_uri(&env, id, String::from_slice(&env, "test"));
+        write_nft_info(&env, id, id, amount);
 
         event::mint(&env, to, id)
     }
@@ -133,7 +134,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::burn(&env, from, id);
     }
     //TODO
-    fn split(env: Env, id: i128){
+    fn split(env: Env, id: i128) {
         let admin = read_administrator(&env);
         admin.require_auth();
         

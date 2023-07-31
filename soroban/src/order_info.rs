@@ -5,35 +5,50 @@ const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
 #[contracttype]
 #[derive(Clone)]
 pub struct TokenOrderInfo{
-    pub invoiceNum: String,
-    pub poNum: String,
-    pub totalAmount: u32,
-    pub checkSum: String,
-    pub suppierName: String,
-    pub buyerName: String,
+    pub invoice_num: String,
+    pub po_num: String,
+    pub total_amount: u32,
+    pub checksum: String,
+    pub supplier_name: String,
+    pub buyer_name: String,
 }
 
 
-pub struct OrderInfo {
+pub struct OrderInfoUtils {
     env: Env,
 }
 
-impl OrderInfo {
-    pub fn new(env: &Env) -> OrderInfo {
-        OrderInfo { env: env.clone() }
+impl OrderInfoUtils {
+    pub fn new(env: &Env) -> OrderInfoUtils {
+        OrderInfoUtils { env: env.clone() }
     }
 
     #[inline(always)]
-    pub fn set_order_info(&self, orderInfo: &TokenOrderInfo) {
-        self.env.storage().instance().set(&ORDERINFO_KEY, metadata);
+    pub fn set_order_info(&self, order_info: &TokenOrderInfo) {
+        self.env.storage().persistent().set(&ORDERINFO_KEY, order_info);
     }
 
     #[inline(always)]
     pub fn get_order_info(&self) -> TokenOrderInfo {
         self.env
             .storage()
-            .instance()
+            .persistent()
             .get(&ORDERINFO_KEY)
             .unwrap_optimized()
     }
+}
+
+pub fn write_order_info(env: &Env, order_info: TokenOrderInfo) {
+    let util = OrderInfoUtils::new(env);
+    util.set_order_info(&order_info);
+}
+
+pub fn read_invoice_num(env: &Env) -> String {
+    let util = OrderInfoUtils::new(env);
+    util.get_order_info().invoice_num
+}
+
+pub fn read_total_amount(env: &Env) -> u32 {
+    let util = OrderInfoUtils::new(env);
+    util.get_order_info().total_amount
 }

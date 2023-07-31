@@ -58,7 +58,7 @@ pub trait NonFungibleTokenTrait {
     ) -> bool;
 
     /// Get the balance of "id".
-    fn balance(env: Env, owner: Address) -> i128;
+    //fn balance(env: Env, owner: Address) -> i128;
 
     /// Get the owner of "id" token.
     fn owner(env: Env, id: i128) -> Address;
@@ -89,6 +89,10 @@ pub trait NonFungibleTokenTrait {
         to: Address,
         uri: String,
     );
+
+    fn mint_original(env: Env, to: Address);
+    
+    fn split(env: Env, id: i128);
 
     /// If "admin" is the administrator or the token owner, burn token "id" from "from".
     /// Emit event with topics = ["burn", from: Address], data = [id: i128]

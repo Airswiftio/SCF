@@ -1,6 +1,6 @@
 #![cfg(test)]
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
-use soroban_sdk::{testutils::Address as _, Address, Env, String, Symbol};
+use soroban_sdk::{testutils::Address as _, Address, Env, String, symbol_short};
 
 #[test]
 fn test_initialize() {
@@ -10,7 +10,7 @@ fn test_initialize() {
 
     let admin = Address::random(&env);
     let name = String::from_slice(&env, "testname");
-    let symbol = Symbol::short("TEST");
+    let symbol = symbol_short!("TEST");
 
     client.initialize(&admin, &name, &symbol);
     assert_eq!(admin, client.admin());
