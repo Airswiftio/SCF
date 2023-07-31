@@ -2,11 +2,12 @@ use soroban_sdk::{contractimpl, Env, Symbol, Address, String, panic_with_error};
 use crate::interface::{NonFungibleTokenTrait, WriteType};
 use crate::admin::{read_administrator, write_administrator, has_administrator};
 use crate::metadata::{write_name, write_symbol, read_name, read_symbol, read_token_uri, write_token_uri};
-use crate::balance::{read_balance, write_balance, increment_supply, read_supply};
+use crate::balance::{increment_supply, read_supply};
 use crate::owner::{read_owner, write_owner, check_owner};
 use crate::approval::{write_approval, read_approval, write_approval_all, read_approval_all};
 use crate::event;
 use crate::errors::Error;
+use crate::order_info::{get_order_info,set_order_info};
 
 pub struct NonFungibleToken;
 
@@ -68,10 +69,6 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         read_approval_all(&env, owner, operator)
     }
 
-    fn balance(env: Env, owner: Address) -> i128 {
-        read_balance(&env, owner)
-    }
-
     fn owner(env: Env, id: i128) -> Address {
         read_owner(&env, id)
     }
@@ -80,8 +77,6 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         check_owner(&env, &from, id);
         from.require_auth();
         write_owner(&env, id, Some(to.clone()));
-        write_balance(&env, from.clone(), WriteType::Remove);
-        write_balance(&env, to.clone(), WriteType::Add);
         event::transfer(&env, from, to, id);
     }
 
@@ -93,25 +88,37 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             write_approval(&env, id, None);
 
             write_owner(&env, id, Some(to.clone()));
-            write_balance(&env, from.clone(), WriteType::Remove);
-            write_balance(&env, to.clone(), WriteType::Add);
 
             event::transfer(&env, from, to, id);
         } else {
             panic_with_error!(&env, Error::NotAuthorized)
         }
     }
-
+    //TODO
     fn mint(env: Env, to: Address, uri: String) {
         let admin = read_administrator(&env);
         admin.require_auth();
         
         let id = read_supply(&env) + 1;
-        write_balance(&env, to.clone(), WriteType::Add);
         write_owner(&env, id, Some(to.clone()));
         increment_supply(&env);
 
         write_token_uri(&env, id, uri);
+        write_NFT_info(&env, id, uri);
+
+        event::mint(&env, to, id)
+    }
+
+    fn mint_original(env: Env, to: Address) {
+        let admin = read_administrator(&env);
+        admin.require_auth();
+        
+        let id = read_supply(&env);
+        let amount = get_order_info(&env);
+        write_owner(&env, id, Some(to.clone()));
+        increment_supply(&env);
+        write_token_uri(&env, id, uri);
+        write_NFT_info(&env, id, id, amount.totalAmount);
 
         event::mint(&env, to, id)
     }
@@ -122,7 +129,16 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
         let from = read_owner(&env, id);
         write_owner(&env, id, None);
-        write_balance(&env, from.clone(), WriteType::Remove);
+
+        event::burn(&env, from, id);
+    }
+    //TODO
+    fn split(env: Env, id: i128){
+        let admin = read_administrator(&env);
+        admin.require_auth();
+        
+        let from = read_owner(&env, id);
+        write_owner(&env, id, None);
 
         event::burn(&env, from, id);
     }

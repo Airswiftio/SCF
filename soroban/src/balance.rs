@@ -1,24 +1,6 @@
 use crate::{interface::WriteType, storage_types::DataKey};
 use soroban_sdk::{Address, Env};
 
-pub fn read_balance(env: &Env, owner: Address) -> i128 {
-    let key = DataKey::Balance(owner);
-    match env.storage().get(&key) {
-        Some(balance) => balance.unwrap(),
-        None => 0,
-    }
-}
-
-pub fn write_balance(env: &Env, owner: Address, write_type: WriteType) {
-    let key = DataKey::Balance(owner.clone());
-    let balance = read_balance(env, owner);
-
-    match write_type {
-        WriteType::Add => env.storage().set(&key, &(balance + 1)),
-        WriteType::Remove => env.storage().set(&key, &(balance - 1)),
-    }
-}
-
 pub fn read_supply(env: &Env) -> i128 {
     let key = DataKey::Supply;
     match env.storage().get(&key) {

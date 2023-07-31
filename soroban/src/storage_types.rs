@@ -17,7 +17,6 @@ pub enum ApprovalKey {
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    Balance(Address),
     Nonce(Address),
     Minted(Address),
     Admin,
@@ -27,4 +26,12 @@ pub enum DataKey {
     Approval(ApprovalKey),
     Owner(i128),
     Supply,
+    NFTInfo(i128),
+}
+
+#[derive(Clone)]
+#[contracttype]
+pub struct NFTInfo{
+    pub root: i128,
+    pub amount: u32,
 }
