@@ -1,7 +1,8 @@
-use soroban_sdk::{contract, contractimpl, Env, Symbol, Address, String, panic_with_error};
+use soroban_sdk::{contract, contractimpl, Env, Symbol, Address, String, panic_with_error, Vec};
 use crate::interface::{NonFungibleTokenTrait, WriteType};
 use crate::admin::{read_administrator, write_administrator, has_administrator};
-use crate::metadata::{write_name, write_symbol, read_name, read_symbol, read_token_uri, write_token_uri, write_nft_info, read_nft_info};
+use crate::metadata::{write_name, write_symbol, read_name, read_symbol, read_token_uri, write_token_uri};
+use crate::sub_nft::{write_sub_nft, read_sub_nft};
 use crate::balance::{increment_supply, read_supply};
 use crate::owner::{read_owner, write_owner, check_owner};
 use crate::approval::{write_approval, read_approval, write_approval_all, read_approval_all};
@@ -119,7 +120,8 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         write_owner(&env, id, Some(to.clone()));
         increment_supply(&env);
         write_token_uri(&env, id, String::from_slice(&env, "test"));
-        write_nft_info(&env, id, id, amount);
+        // TODO: is token uri still needed?
+        write_sub_nft(&env, id, id, amount);
 
         event::mint(&env, to, id)
     }
@@ -134,13 +136,36 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::burn(&env, from, id);
     }
     //TODO
-    fn split(env: Env, id: i128) {
-        let admin = read_administrator(&env);
-        admin.require_auth();
-        
-        let from = read_owner(&env, id);
-        write_owner(&env, id, None);
+    fn split(env: Env, id: i128, amounts: Vec<u32>) {
+        let owner = read_owner(&env, id);
+        owner.require_auth();
 
-        event::burn(&env, from, id);
+        let root = read_sub_nft(&env, id);
+        if amounts.iter().sum::<u32>() > root.amount {
+            panic_with_error!(&env, Error::AmountTooMuch);
+        }
+
+        let mut remaining = root.amount;
+        for amount in amounts {
+            let new_id = read_supply(&env) + 1;
+            let contract_addr = env.current_contract_address();
+            write_sub_nft(&env, new_id, id, amount);
+            write_owner(&env, new_id, Some(contract_addr));
+            increment_supply(&env);
+            remaining -= amount;
+        }
+
+        // if root amount > 0, create another sub nft to represent the remaining amount belonging to original owner
+        if remaining > 0 {
+            let new_id = read_supply(&env) + 1;
+            write_sub_nft(&env, new_id, id, remaining);
+            write_owner(&env, new_id, Some(owner));
+            increment_supply(&env);
+        }
+    }
+
+    fn redeem(end: Env, id: i128) {
+        // check that contract address on ledger has enough USDC
+        // burn the NFT by setting owner address to null
     }
 }

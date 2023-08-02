@@ -12,5 +12,6 @@ mod balance;
 mod approval;
 mod test;
 mod order_info;
+mod sub_nft;
 
 pub use crate::contract::NonFungibleTokenClient;

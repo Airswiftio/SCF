@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, Symbol, String};
+use soroban_sdk::{Address, Env, Symbol, String, Vec};
 
 pub trait NonFungibleTokenTrait {
     // --------------------------------------------------------------------------------
@@ -92,7 +92,9 @@ pub trait NonFungibleTokenTrait {
 
     fn mint_original(env: Env, to: Address);
     
-    fn split(env: Env, id: i128);
+    fn split(env: Env, id: i128, amounts: Vec<u32>);
+
+    fn redeem(env: Env, id: i128);
 
     /// If "admin" is the administrator or the token owner, burn token "id" from "from".
     /// Emit event with topics = ["burn", from: Address], data = [id: i128]

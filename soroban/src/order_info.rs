@@ -11,6 +11,7 @@ pub struct TokenOrderInfo{
     pub checksum: String,
     pub supplier_name: String,
     pub buyer_name: String,
+    // TODO: start and end date
 }
 
 

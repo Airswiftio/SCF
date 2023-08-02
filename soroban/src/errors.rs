@@ -8,5 +8,7 @@ pub enum Error {
     NotEmpty = 2,
     NotAuthorized = 3,
     NotPermitted = 4,
-    NotOwned = 5
+    NotOwned = 5,
+    AmountTooMuch = 6,
+    InvalidContract = 7,
 }

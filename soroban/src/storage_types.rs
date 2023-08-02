@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address};
+use soroban_sdk::{contracttype, Address, Vec};
 
 #[derive(Clone)]
 #[contracttype]
@@ -25,14 +25,15 @@ pub enum DataKey {
     URI(i128),
     Approval(ApprovalKey),
     Owner(i128),
+    Disabled(i128),
     Supply,
-    NFTInfo(i128),
+    SubNFTInfo(i128),
     OrderInfo,
 }
 
 #[derive(Clone)]
 #[contracttype]
-pub struct NFTInfo{
+pub struct SubNFT{
     pub root: i128,
     pub amount: u32,
 }
