@@ -11,7 +11,8 @@ pub struct TokenOrderInfo{
     pub checksum: String,
     pub supplier_name: String,
     pub buyer_name: String,
-    // TODO: start and end date
+    pub start_date: String,
+    pub end_date: String,
 }
 
 
@@ -26,14 +27,14 @@ impl OrderInfoUtils {
 
     #[inline(always)]
     pub fn set_order_info(&self, order_info: &TokenOrderInfo) {
-        self.env.storage().persistent().set(&ORDERINFO_KEY, order_info);
+        self.env.storage().instance().set(&ORDERINFO_KEY, order_info);
     }
 
     #[inline(always)]
     pub fn get_order_info(&self) -> TokenOrderInfo {
         self.env
             .storage()
-            .persistent()
+            .instance()
             .get(&ORDERINFO_KEY)
             .unwrap_optimized()
     }

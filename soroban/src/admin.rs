@@ -4,12 +4,12 @@ use crate::errors::Error;
 
 pub fn has_administrator(env: &Env) -> bool {
     let key = DataKey::Admin;
-    env.storage().persistent().has(&key)
+    env.storage().instance().has(&key)
 }
 
 pub fn read_administrator(env: &Env) -> Address {
     let key = DataKey::Admin;
-    match env.storage().persistent().get::<DataKey, Address>(&key) {
+    match env.storage().instance().get::<DataKey, Address>(&key) {
         Some(data) => data,
         None => panic_with_error!(env, Error::NotFound),
     }
@@ -17,5 +17,5 @@ pub fn read_administrator(env: &Env) -> Address {
 
 pub fn write_administrator(env: &Env, id: &Address) {
     let key = DataKey::Admin;
-    env.storage().persistent().set(&key, id);
+    env.storage().instance().set(&key, id);
 }
