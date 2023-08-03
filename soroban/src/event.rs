@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, symbol_short};
+use soroban_sdk::{Address, Env, symbol_short, Vec};
 
 pub(crate) fn set_admin(e: &Env, admin: Address, new_admin: Address) {
     let topics = (symbol_short!("set_admin"), admin);
@@ -20,9 +20,9 @@ pub(crate) fn burn(e: &Env, from: Address, id: i128) {
     e.events().publish(topics, id);
 }
 
-pub(crate) fn split(e: &Env, from: Address, id: i128) {
+pub(crate) fn split(e: &Env, from: Address, id: i128, new_ids: Vec<i128>) {
     let topics = (symbol_short!("split"), from);
-    e.events().publish(topics, id);
+    e.events().publish(topics, (id, new_ids));
 }
 
 pub(crate) fn approve(e: &Env, operator: Address, id: i128) {

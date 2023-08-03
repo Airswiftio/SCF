@@ -40,8 +40,20 @@ impl OrderInfoUtils {
     }
 }
 
-pub fn write_order_info(env: &Env, order_info: TokenOrderInfo) {
+pub fn write_order_info(env: &Env, invoice_num: String, po_num: String, total_amount: u32, checksum: String, 
+    supplier_name: String, buyer_name: String, start_date: String, end_date: String) {
+
     let util = OrderInfoUtils::new(env);
+    let order_info = TokenOrderInfo {
+        invoice_num, 
+        po_num,
+        total_amount,
+        checksum,
+        supplier_name,
+        buyer_name,
+        start_date,
+        end_date,
+    };
     util.set_order_info(&order_info);
 }
 

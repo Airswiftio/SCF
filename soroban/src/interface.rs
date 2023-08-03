@@ -109,8 +109,8 @@ pub trait NonFungibleTokenTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        name: String,
-        symbol: Symbol,
+        invoice_num: String, po_num: String, total_amount: u32, checksum: String, 
+        supplier_name: String, buyer_name: String, start_date: String, end_date: String
     );
 }
 

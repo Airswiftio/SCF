@@ -16,14 +16,18 @@ pub struct NonFungibleToken;
 
 #[contractimpl]
 impl NonFungibleTokenTrait for NonFungibleToken {
-    fn initialize(e: Env, admin: Address, name: String, symbol: Symbol) {
+    fn initialize(e: Env, admin: Address, 
+        invoice_num: String, po_num: String, total_amount: u32, checksum: String, 
+        supplier_name: String, buyer_name: String, start_date: String, end_date: String) {
+
         if has_administrator(&e) {
             panic!("already initialized")
         }
 
         write_administrator(&e, &admin);
-        write_name(&e, &name);
-        write_symbol(&e, &symbol);
+        //write_name(&e, &name);
+        //write_symbol(&e, &symbol);
+        write_order_info(&e, invoice_num, po_num, total_amount, checksum, supplier_name, buyer_name, start_date, end_date);
     }
 
     fn admin(env: Env) -> Address {
@@ -168,11 +172,13 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         }
 
         let mut remaining = root.amount;
+        let mut new_ids = Vec::new(&env);
         for amount in amounts {
             let new_id = read_supply(&env) + 1;
             write_sub_nft(&env, new_id, id, amount);
             write_owner(&env, new_id, Some(admin.clone()));
             increment_supply(&env);
+            new_ids.push_back(new_id);
             remaining -= amount;
         }
 
@@ -180,12 +186,15 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         if remaining > 0 {
             let new_id = read_supply(&env) + 1;
             write_sub_nft(&env, new_id, id, remaining);
-            write_owner(&env, new_id, Some(owner));
+            write_owner(&env, new_id, Some(owner.clone()));
             increment_supply(&env);
+            new_ids.push_back(new_id);
         }
 
         // disable the original NFT
         write_sub_nft_disabled(&env, id, true);
+        
+        event::split(&env, owner, id, new_ids.clone());
     }
 
     fn redeem(env: Env, id: i128) {
