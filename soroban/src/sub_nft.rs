@@ -1,6 +1,6 @@
-use crate::storage_types::{DataKey, SubNFT, BALANCE_BUMP_AMOUNT};
-use soroban_sdk::{Env, Symbol, String, panic_with_error, Map, Address, Vec};
 use crate::errors::Error;
+use crate::storage_types::{DataKey, SubNFT, BALANCE_BUMP_AMOUNT};
+use soroban_sdk::{panic_with_error, Address, Env, Map, String, Symbol, Vec};
 
 pub fn read_sub_nft(env: &Env, id: i128) -> SubNFT {
     let key = DataKey::SubNFTInfo(id);
@@ -8,7 +8,7 @@ pub fn read_sub_nft(env: &Env, id: i128) -> SubNFT {
         Some(data) => {
             env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
             data
-        },
+        }
         None => panic_with_error!(env, Error::NotFound),
     }
 }
@@ -18,7 +18,7 @@ pub fn write_sub_nft(env: &Env, id: i128, root: i128, amount: u32) {
     match env.storage().persistent().get::<DataKey, SubNFT>(&key) {
         Some(_) => panic_with_error!(env, Error::NotEmpty),
         None => {
-            let sub_nft = SubNFT{root, amount};
+            let sub_nft = SubNFT { root, amount };
             env.storage().persistent().set(&key, &sub_nft);
             env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
         }
@@ -31,7 +31,7 @@ pub fn read_sub_nft_disabled(env: &Env, id: i128) -> bool {
         Some(data) => {
             env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
             data
-        },
+        }
         None => false,
     }
 }

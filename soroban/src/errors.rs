@@ -1,4 +1,4 @@
-use soroban_sdk::{contracterror};
+use soroban_sdk::contracterror;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -11,4 +11,5 @@ pub enum Error {
     NotOwned = 5,
     AmountTooMuch = 6,
     InvalidContract = 7,
+    InvalidArgs = 8,
 }

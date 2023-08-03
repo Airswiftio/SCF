@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, Symbol, String, Vec};
+use soroban_sdk::{Address, Env, String, Symbol, Vec};
 
 pub trait NonFungibleTokenTrait {
     // --------------------------------------------------------------------------------
@@ -31,69 +31,48 @@ pub trait NonFungibleTokenTrait {
 
     /// Allows "operator" to manage token "id" if "owner" is the current owner of token "id".
     /// Emit event with topics = ["appr", operator: Address], data = [id: i128]
-    fn appr(
-        env: Env,
-        owner: Address,
-        operator: Address,
-        id: i128,
-    );
+    fn appr(env: Env, owner: Address, operator: Address, id: i128);
 
     /// If "approved", allows "operator" to manage all tokens of "owner"
     /// Emit event with topics = ["appr_all", operator: Address], data = [owner: Address]
-    fn appr_all(
-        env: Env,
-        owner: Address,
-        operator: Address,
-        approved: bool,
-    );
+    fn appr_all(env: Env, owner: Address, operator: Address, approved: bool);
 
     /// Returns the identifier approved for token "id".
     fn get_appr(env: Env, id: i128) -> Address;
 
     /// If "operator" is allowed to manage assets of "owner", return true.
-    fn is_appr(
-        env: Env,
-        owner: Address,
-        operator: Address,
-    ) -> bool;
+    fn is_appr(env: Env, owner: Address, operator: Address) -> bool;
 
-    /// Get the balance of "id".
-    //fn balance(env: Env, owner: Address) -> i128;
+    /// Get the amount associated with "id".
+    fn amount(env: Env, id: i128) -> u32;
+
+    /// Get the parent id of "id" token.
+    fn parent(env: Env, id: i128) -> i128;
 
     /// Get the owner of "id" token.
     fn owner(env: Env, id: i128) -> Address;
 
+    /// Get the "disabled" value of "id" token.
+    fn is_disabled(env: Env, id: i128) -> bool;
+
     /// Transfer token "id" from "from" to "to.
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
-    fn transfer(
-        env: Env,
-        from: Address,
-        to: Address,
-        id: i128,
-    );
+    fn transfer(env: Env, from: Address, to: Address, id: i128);
 
     /// Transfer token "id" from "from" to "to", consuming the allowance of "spender".
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
-    fn transfer_from(
-        env: Env,
-        spender: Address,
-        from: Address,
-        to: Address,
-        id: i128,
-    );
+    fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128);
 
     /// If authorized as the administrator, mint token "id" with URI "uri".
     /// Emit event with topics = ["mint", to: Address], data = [uri: String]
-    fn mint(
-        env: Env,
-        to: Address,
-        uri: String,
-    );
+    //fn mint(env: Env, to: Address, uri: String);
 
     fn mint_original(env: Env, to: Address);
-    
+
+    /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
     fn split(env: Env, id: i128, amounts: Vec<u32>);
 
+    /// Burn a specified NFT and transfer funds to the owner.
     fn redeem(env: Env, id: i128);
 
     /// If "admin" is the administrator or the token owner, burn token "id" from "from".
@@ -109,8 +88,14 @@ pub trait NonFungibleTokenTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        invoice_num: String, po_num: String, total_amount: u32, checksum: String, 
-        supplier_name: String, buyer_name: String, start_date: String, end_date: String
+        invoice_num: String,
+        po_num: String,
+        total_amount: u32,
+        checksum: String,
+        supplier_name: String,
+        buyer_name: String,
+        start_date: String,
+        end_date: String,
     );
 }
 
