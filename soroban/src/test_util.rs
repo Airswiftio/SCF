@@ -1,5 +1,7 @@
+#![cfg(any(test, feature = "testutils"))]
+
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
-use soroban_sdk::{testutils::Address as _, Address, Env, String, symbol_short};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, String};
 
 pub fn setup_test_token<'a>(env: &Env, admin: &Address) -> NonFungibleTokenClient<'a> {
     let contract_id = env.register_contract(None, NonFungibleToken);
@@ -14,6 +16,16 @@ pub fn setup_test_token<'a>(env: &Env, admin: &Address) -> NonFungibleTokenClien
     let start_date = String::from_slice(env, "2023-08-01");
     let end_date = String::from_slice(env, "2024-08-01");
 
-    client.initialize(admin, &invoice_num, &po_num, &total_amount, &checksum, &supplier_name, &buyer_name, &start_date, &end_date);
+    client.initialize(
+        admin,
+        &invoice_num,
+        &po_num,
+        &total_amount,
+        &checksum,
+        &supplier_name,
+        &buyer_name,
+        &start_date,
+        &end_date,
+    );
     client
 }

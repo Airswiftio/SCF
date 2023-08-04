@@ -177,7 +177,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
         event::burn(&env, from, id);
     }
-    //TODO
+
     fn split(env: Env, id: i128, amounts: Vec<u32>) {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
         if read_sub_nft_disabled(&env, id) {
