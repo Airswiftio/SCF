@@ -12,14 +12,16 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
 2. `cargo test`
 
 ## Setup sandbox accounts on Soroban CLI
-1. ```soroban config identity generate admin && \
-soroban config identity generate acc1 && \
-soroban config identity address admin && \
-soroban config identity address acc1```
+1. ```bash
+   soroban config identity generate admin && \
+   soroban config identity generate acc1 && \
+   soroban config identity address admin && \
+   soroban config identity address acc1```
 2. The addresses for the accounts will be output. Take note of the addresses which will be used to initialize the contract and mint the tokens.
 
 ## Run on Soroban CLI
-1. ```soroban contract invoke \
+1. ```bash
+   soroban contract invoke \
    --wasm target/wasm32-unknown-unknown/release/scf_soroban.wasm \
    --id 1 \
    --source admin \
@@ -35,7 +37,8 @@ soroban config identity address acc1```
    --end_date "2024-08-04" \
    --admin [YOUR_ADMIN_ADDRESS]
    ```
-2. ```soroban contract invoke \
+2. ```bash
+   soroban contract invoke \
    --wasm target/wasm32-unknown-unknown/release/scf_soroban.wasm \
    --id 1 \
    --source admin \
