@@ -1,7 +1,7 @@
 #![cfg(any(test, feature = "testutils"))]
 
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, Env, String};
+use soroban_sdk::{Address, Env, String};
 
 pub fn setup_test_token<'a>(env: &Env, admin: &Address) -> NonFungibleTokenClient<'a> {
     let contract_id = env.register_contract(None, NonFungibleToken);

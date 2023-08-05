@@ -1,9 +1,9 @@
 #![cfg(test)]
-use crate::contract::{NonFungibleToken, NonFungibleTokenClient, __is_disabled};
-use crate::errors::Error;
+use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
+
 use crate::test_util::setup_test_token;
-use soroban_sdk::Vec;
-use soroban_sdk::{symbol_short, testutils::Address as _, vec, Address, Env, String};
+
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
 
 #[test]
 fn test_initialize() {
@@ -175,4 +175,20 @@ fn test_transfer() {
 
     client.transfer(&acc1, &acc2, &0);
     assert_eq!(acc2, client.owner(&0));
+}
+
+#[test]
+fn test_burn() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    client.mint_original(&admin);
+    let res = client.try_owner(&0);
+    assert_eq!(res.is_ok(), true);
+
+    client.burn(&0);
+    let res2 = client.try_owner(&0);
+    assert_eq!(res2.is_ok(), false);
 }

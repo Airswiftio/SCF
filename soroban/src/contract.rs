@@ -3,9 +3,9 @@ use crate::approval::{read_approval, read_approval_all, write_approval, write_ap
 use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
-use crate::interface::{NonFungibleTokenTrait, WriteType};
+use crate::interface::{NonFungibleTokenTrait};
 use crate::metadata::{
-    read_name, read_symbol, read_token_uri, write_name, write_symbol, write_token_uri,
+    read_name, read_symbol, read_token_uri,
 };
 use crate::order_info::{read_total_amount, write_order_info};
 use crate::owner::{check_owner, read_owner, write_owner};
@@ -222,7 +222,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::split(&env, owner, id, new_ids.clone());
     }
 
-    fn redeem(env: Env, id: i128) {
+    fn redeem(env: Env, _id: i128) {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
         // check that contract address on ledger has enough USDC
         // burn the NFT by setting owner address to null

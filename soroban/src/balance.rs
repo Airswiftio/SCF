@@ -1,4 +1,4 @@
-use crate::{interface::WriteType, storage_types::DataKey, storage_types::BALANCE_BUMP_AMOUNT};
+use crate::{storage_types::DataKey, storage_types::BALANCE_BUMP_AMOUNT};
 use soroban_sdk::{Address, Env};
 
 pub fn read_supply(env: &Env) -> i128 {
