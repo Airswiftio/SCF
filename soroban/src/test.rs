@@ -80,11 +80,11 @@ fn test_split() {
     client.split(&0, &vec![&env, 300000_u32, 500000_u32]);
 
     assert_eq!(300000, client.amount(&1));
-    assert_eq!(admin, client.owner(&1));
+    assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
 
     assert_eq!(500000, client.amount(&2));
-    assert_eq!(admin, client.owner(&2));
+    assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
 
     assert_eq!(200000, client.amount(&3));
@@ -111,11 +111,11 @@ fn test_split_nested() {
 
     client.split(&1, &vec![&env, 500000_u32]);
     assert_eq!(500000, client.amount(&3));
-    assert_eq!(admin, client.owner(&3));
+    assert_eq!(client.address, client.owner(&3));
     assert_eq!(1, client.parent(&3));
 
     assert_eq!(300000, client.amount(&4));
-    assert_eq!(admin, client.owner(&4));
+    assert_eq!(client.address, client.owner(&4));
     assert_eq!(1, client.parent(&4));
 }
 

@@ -192,7 +192,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         }
         let owner = read_owner(&env, id);
         owner.require_auth();
-        let admin = read_administrator(&env);
+        let contract_addr = env.current_contract_address();
 
         let root = read_sub_nft(&env, id);
         if amounts.iter().sum::<u32>() > root.amount {
@@ -205,7 +205,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             let new_id = read_supply(&env);
             write_sub_nft(&env, new_id, id, amount);
             write_sub_nft_disabled(&env, new_id, false);
-            write_owner(&env, new_id, Some(admin.clone()));
+            write_owner(&env, new_id, Some(contract_addr.clone()));
             increment_supply(&env);
             new_ids.push_back(new_id);
             remaining -= amount;
