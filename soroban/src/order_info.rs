@@ -4,17 +4,16 @@ const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
 
 #[contracttype]
 #[derive(Clone)]
-pub struct TokenOrderInfo{
-    pub invoice_num: String,
-    pub po_num: String,
+pub struct TokenOrderInfo {
+    pub invoice_num: i128,
+    pub po_num: i128,
     pub total_amount: u32,
     pub checksum: String,
     pub supplier_name: String,
     pub buyer_name: String,
-    pub start_date: String,
-    pub end_date: String,
+    pub start_time: u64,
+    pub end_time: u64,
 }
-
 
 pub struct OrderInfoUtils {
     env: Env,
@@ -27,7 +26,10 @@ impl OrderInfoUtils {
 
     #[inline(always)]
     pub fn set_order_info(&self, order_info: &TokenOrderInfo) {
-        self.env.storage().instance().set(&ORDERINFO_KEY, order_info);
+        self.env
+            .storage()
+            .instance()
+            .set(&ORDERINFO_KEY, order_info);
     }
 
     #[inline(always)]
@@ -40,24 +42,32 @@ impl OrderInfoUtils {
     }
 }
 
-pub fn write_order_info(env: &Env, invoice_num: String, po_num: String, total_amount: u32, checksum: String, 
-    supplier_name: String, buyer_name: String, start_date: String, end_date: String) {
-
+pub fn write_order_info(
+    env: &Env,
+    invoice_num: i128,
+    po_num: i128,
+    total_amount: u32,
+    checksum: String,
+    supplier_name: String,
+    buyer_name: String,
+    start_time: u64,
+    end_time: u64,
+) {
     let util = OrderInfoUtils::new(env);
     let order_info = TokenOrderInfo {
-        invoice_num, 
+        invoice_num,
         po_num,
         total_amount,
         checksum,
         supplier_name,
         buyer_name,
-        start_date,
-        end_date,
+        start_time,
+        end_time,
     };
     util.set_order_info(&order_info);
 }
 
-pub fn read_invoice_num(env: &Env) -> String {
+pub fn read_invoice_num(env: &Env) -> i128 {
     let util = OrderInfoUtils::new(env);
     util.get_order_info().invoice_num
 }
@@ -65,4 +75,9 @@ pub fn read_invoice_num(env: &Env) -> String {
 pub fn read_total_amount(env: &Env) -> u32 {
     let util = OrderInfoUtils::new(env);
     util.get_order_info().total_amount
+}
+
+pub fn read_end_time(env: &Env) -> u64 {
+    let util = OrderInfoUtils::new(env);
+    util.get_order_info().end_time
 }

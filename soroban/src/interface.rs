@@ -79,6 +79,12 @@ pub trait NonFungibleTokenTrait {
     /// Emit event with topics = ["burn", from: Address], data = [id: i128]
     fn burn(env: Env, id: i128);
 
+    /// checks usdc balance, and unlocks redemption if the balance >= requirement
+    fn check_paid(env: Env) -> bool;
+
+    /// use env timestamp and check against stored expiry time
+    fn check_expired(env: Env) -> bool;
+
     // --------------------------------------------------------------------------------
     // Implementation Interface
     // --------------------------------------------------------------------------------
@@ -88,14 +94,14 @@ pub trait NonFungibleTokenTrait {
     fn initialize(
         e: Env,
         admin: Address,
-        invoice_num: String,
-        po_num: String,
+        invoice_num: i128,
+        po_num: i128,
         total_amount: u32,
         checksum: String,
         supplier_name: String,
         buyer_name: String,
-        start_date: String,
-        end_date: String,
+        start_time: u64,
+        end_time: u64,
     );
 }
 

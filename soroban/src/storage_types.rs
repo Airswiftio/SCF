@@ -32,11 +32,13 @@ pub enum DataKey {
     Supply,
     SubNFTInfo(i128),
     OrderInfo,
+    Expired,
+    Paid,
 }
 
 #[derive(Clone)]
 #[contracttype]
-pub struct SubNFT{
+pub struct SubNFT {
     pub root: i128,
     pub amount: u32,
 }

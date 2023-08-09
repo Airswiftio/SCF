@@ -12,14 +12,14 @@ fn test_initialize() {
     let client = NonFungibleTokenClient::new(&env, &contract_id);
 
     let admin = Address::random(&env);
-    let invoice_num = String::from_slice(&env, "12345678");
-    let po_num = String::from_slice(&env, "1");
+    let invoice_num = 12345678;
+    let po_num = 1;
     let total_amount: u32 = 1000000;
     let checksum = String::from_slice(&env, "1f1e33");
     let supplier_name = String::from_slice(&env, "L1 Supplier");
     let buyer_name = String::from_slice(&env, "Buyer Company");
-    let start_date = String::from_slice(&env, "2023-08-01");
-    let end_date = String::from_slice(&env, "2024-08-01");
+    let start_time = 1640995200; // 2022-01-01 00:00:00 UTC+0
+    let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
 
     client.initialize(
         &admin,
@@ -29,8 +29,8 @@ fn test_initialize() {
         &checksum,
         &supplier_name,
         &buyer_name,
-        &start_date,
-        &end_date,
+        &start_time,
+        &end_time,
     );
     assert_eq!(admin, client.admin());
     // TODO: getters for other fields?

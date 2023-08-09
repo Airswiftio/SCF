@@ -3,15 +3,17 @@ use crate::approval::{read_approval, read_approval_all, write_approval, write_ap
 use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
-use crate::interface::{NonFungibleTokenTrait};
+use crate::interface::NonFungibleTokenTrait;
 use crate::metadata::{
-    read_name, read_symbol, read_token_uri,
+    read_expired, read_name, read_paid, read_symbol, read_token_uri, write_expired, write_paid,
 };
-use crate::order_info::{read_total_amount, write_order_info};
+use crate::order_info::{read_end_time, read_total_amount, write_order_info};
 use crate::owner::{check_owner, read_owner, write_owner};
 use crate::storage_types::INSTANCE_BUMP_AMOUNT;
 use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
-use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Env, String, Symbol, Vec};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, token, Address, Env, String, Symbol, Vec,
+};
 
 #[contract]
 pub struct NonFungibleToken;
@@ -21,14 +23,14 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn initialize(
         e: Env,
         admin: Address,
-        invoice_num: String,
-        po_num: String,
+        invoice_num: i128,
+        po_num: i128,
         total_amount: u32,
         checksum: String,
         supplier_name: String,
         buyer_name: String,
-        start_date: String,
-        end_date: String,
+        start_time: u64,
+        end_time: u64,
     ) {
         if has_administrator(&e) {
             panic!("already initialized")
@@ -45,8 +47,8 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             checksum,
             supplier_name,
             buyer_name,
-            start_date,
-            end_date,
+            start_time,
+            end_time,
         );
     }
 
@@ -161,8 +163,9 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         }
         let amount = read_total_amount(&env);
         write_owner(&env, id, Some(to.clone()));
-        increment_supply(&env);
         write_sub_nft(&env, id, id, amount);
+        write_sub_nft_disabled(&env, id, false);
+        increment_supply(&env);
 
         event::mint(&env, to, id)
     }
@@ -201,6 +204,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         for amount in amounts {
             let new_id = read_supply(&env);
             write_sub_nft(&env, new_id, id, amount);
+            write_sub_nft_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(admin.clone()));
             increment_supply(&env);
             new_ids.push_back(new_id);
@@ -211,6 +215,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         if remaining > 0 {
             let new_id = read_supply(&env);
             write_sub_nft(&env, new_id, id, remaining);
+            write_sub_nft_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(owner.clone()));
             increment_supply(&env);
             new_ids.push_back(new_id);
@@ -226,5 +231,30 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
         // check that contract address on ledger has enough USDC
         // burn the NFT by setting owner address to null
+    }
+
+    fn check_paid(env: Env) -> bool {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let client = token::Client::new(&env, &env.current_contract_address()); // use USDC address instead?
+        let balance = client.balance(&env.current_contract_address());
+        let paid = balance > i128::from(read_total_amount(&env));
+        if paid {
+            write_paid(&env, true);
+        }
+        paid
+    }
+
+    fn check_expired(env: Env) -> bool {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        // 1. get current date from ledger
+        // 2. get expiry date from storage
+        // 3. if current < expiry, return false
+        // 4. if current >= expiry, set the "expired" flag to true.
+        let ledger = env.ledger();
+        let expired = ledger.timestamp() > read_end_time(&env);
+        if expired {
+            write_expired(&env, true);
+        }
+        expired
     }
 }

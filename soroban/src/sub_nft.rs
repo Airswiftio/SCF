@@ -32,7 +32,7 @@ pub fn read_sub_nft_disabled(env: &Env, id: i128) -> bool {
             env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
             data
         }
-        None => false,
+        None => panic_with_error!(env, Error::NotFound),
     }
 }
 
