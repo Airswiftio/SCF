@@ -4,12 +4,16 @@
 Follow the steps according to https://soroban.stellar.org/docs/getting-started/setup 
 
 ## Build
-1. `cd soroban`
-2. `cargo build --target wasm32-unknown-unknown --release`
+1. ```bash
+   cd soroban```
+2. ```bash
+   cargo build --target wasm32-unknown-unknown --release```
 
 ## Run Unit Tests
-1. `cd soroban`
-2. `cargo test`
+1. ```bash
+   cd soroban```
+2. ```bash
+   cargo test```
 
 ## Setup sandbox accounts on Soroban CLI
 1. ```bash

@@ -2,8 +2,10 @@
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 
 use crate::test_util::setup_test_token;
-
-use soroban_sdk::{testutils::Address as _, vec, Address, Env, String};
+use soroban_sdk::{
+    testutils::Address as _, token::AdminClient as TokenAdminClient, token::Client as TokenClient,
+    vec, Address, Env, String,
+};
 
 #[test]
 fn test_initialize() {
@@ -191,4 +193,46 @@ fn test_burn() {
     client.burn(&0);
     let res2 = client.try_owner(&0);
     assert_eq!(res2.is_ok(), false);
+}
+
+#[test]
+fn test_check_paid() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+    let user = Address::random(&env);
+
+    // setup fake external token
+    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_admin = TokenAdminClient::new(&env, ext_token_addr);
+    ext_admin.mint(&user, &1000000);
+    let ext_client = TokenClient::new(&env, ext_token_addr);
+    ext_client.mock_all_auths();
+
+    client.set_external_token_provider(&ext_token_addr);
+    assert_eq!(client.check_paid(), false);
+
+    ext_client.transfer(&user, &client.address, &500000);
+    assert_eq!(client.check_paid(), false); // total amount is 1000000, only 500000 was paid
+
+    ext_client.transfer(&user, &client.address, &500000);
+    assert_eq!(client.check_paid(), true); // successfully paid the rest of the amount
+}
+
+#[test]
+fn test_check_expired() {
+    let mut snapshot = Env::default().to_snapshot();
+    snapshot.timestamp = 1640995200; // 2022-01-01 00:00:00 UTC+0
+    let env = Env::from_snapshot(snapshot.clone());
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    assert_eq!(client.check_expired(), false);
+
+    let mut snapshot2 = Env::default().to_snapshot();
+    snapshot2.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
+    let env2 = Env::from_snapshot(snapshot2.clone());
+    let client2 = setup_test_token(&env2, &admin);
+    assert_eq!(client2.check_expired(), true);
 }

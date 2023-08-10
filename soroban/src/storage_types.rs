@@ -34,6 +34,7 @@ pub enum DataKey {
     OrderInfo,
     Expired,
     Paid,
+    ExternalTokenProvider,
 }
 
 #[derive(Clone)]

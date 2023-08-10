@@ -5,14 +5,15 @@ use crate::errors::Error;
 use crate::event;
 use crate::interface::NonFungibleTokenTrait;
 use crate::metadata::{
-    read_expired, read_name, read_paid, read_symbol, read_token_uri, write_expired, write_paid,
+    read_expired, read_external_token_provider, read_name, read_paid, read_symbol, read_token_uri,
+    write_expired, write_external_token_provider, write_paid,
 };
 use crate::order_info::{read_end_time, read_total_amount, write_order_info};
 use crate::owner::{check_owner, read_owner, write_owner};
 use crate::storage_types::INSTANCE_BUMP_AMOUNT;
 use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Env, String, Symbol, Vec,
+    contract, contractimpl, log, panic_with_error, token, Address, Env, String, Symbol, Vec,
 };
 
 #[contract]
@@ -190,6 +191,9 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         if amounts.len() == 0 {
             panic_with_error!(&env, Error::InvalidArgs);
         }
+        if read_expired(&env) {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
         let owner = read_owner(&env, id);
         owner.require_auth();
         let contract_addr = env.current_contract_address();
@@ -227,17 +231,32 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::split(&env, owner, id, new_ids.clone());
     }
 
-    fn redeem(env: Env, _id: i128) {
+    fn redeem(env: Env, id: i128) {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        // check that contract address on ledger has enough USDC
-        // burn the NFT by setting owner address to null
+        if !read_expired(&env) || !read_paid(&env) {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
+
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let owner = read_owner(&env, id);
+        owner.require_auth();
+
+        // TODO: send funds to owner address, then burn the NFT
+    }
+
+    fn set_external_token_provider(env: Env, contract_addr: Address) {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let admin = read_administrator(&env);
+        admin.require_auth();
+
+        write_external_token_provider(&env, contract_addr);
     }
 
     fn check_paid(env: Env) -> bool {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        let client = token::Client::new(&env, &env.current_contract_address()); // use USDC address instead?
+        let client = token::Client::new(&env, &read_external_token_provider(&env));
         let balance = client.balance(&env.current_contract_address());
-        let paid = balance > i128::from(read_total_amount(&env));
+        let paid = balance >= i128::from(read_total_amount(&env));
         if paid {
             write_paid(&env, true);
         }
@@ -251,9 +270,10 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         // 3. if current < expiry, return false
         // 4. if current >= expiry, set the "expired" flag to true.
         let ledger = env.ledger();
-        let expired = ledger.timestamp() > read_end_time(&env);
+        let expired = ledger.timestamp() >= read_end_time(&env);
         if expired {
             write_expired(&env, true);
+            // TODO: transfer unclaimed NFTs to the root NFT's owner address
         }
         expired
     }

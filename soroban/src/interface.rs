@@ -85,6 +85,9 @@ pub trait NonFungibleTokenTrait {
     /// use env timestamp and check against stored expiry time
     fn check_expired(env: Env) -> bool;
 
+    /// set the contract address for the external token (e.g. USDC)
+    fn set_external_token_provider(env: Env, contract_addr: Address);
+
     // --------------------------------------------------------------------------------
     // Implementation Interface
     // --------------------------------------------------------------------------------
