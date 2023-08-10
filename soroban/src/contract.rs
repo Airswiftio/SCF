@@ -241,7 +241,19 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let owner = read_owner(&env, id);
         owner.require_auth();
 
-        // TODO: send funds to owner address, then burn the NFT
+        // send funds to owner address
+        let sub_nft = read_sub_nft(&env, id);
+        let client = token::Client::new(&env, &read_external_token_provider(&env));
+        client.transfer(
+            &env.current_contract_address(),
+            &owner,
+            &i128::from(sub_nft.amount),
+        );
+
+        // burn the token
+        write_owner(&env, id, None);
+
+        event::redeem(&env, owner, id);
     }
 
     fn set_external_token_provider(env: Env, contract_addr: Address) {
@@ -254,6 +266,10 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
     fn check_paid(env: Env) -> bool {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let paid_cached = read_paid(&env);
+        if paid_cached {
+            return true;
+        }
         let client = token::Client::new(&env, &read_external_token_provider(&env));
         let balance = client.balance(&env.current_contract_address());
         let paid = balance >= i128::from(read_total_amount(&env));
@@ -265,15 +281,27 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
     fn check_expired(env: Env) -> bool {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        // 1. get current date from ledger
-        // 2. get expiry date from storage
-        // 3. if current < expiry, return false
-        // 4. if current >= expiry, set the "expired" flag to true.
+        let expired_cached = read_expired(&env);
+        if expired_cached {
+            return true;
+        }
         let ledger = env.ledger();
         let expired = ledger.timestamp() >= read_end_time(&env);
         if expired {
             write_expired(&env, true);
-            // TODO: transfer unclaimed NFTs to the root NFT's owner address
+            // transfer unclaimed NFTs to the root NFT's owner address
+            let last_id = read_supply(&env);
+            if last_id > 0 {
+                let to = read_owner(&env, 0);
+                let contract_addr = &env.current_contract_address();
+                for i in 1..last_id {
+                    let owner = read_owner(&env, i);
+                    if owner == contract_addr.clone() {
+                        write_owner(&env, i, Some(to.clone()));
+                        event::transfer(&env, contract_addr.clone(), to.clone(), i);
+                    }
+                }
+            }
         }
         expired
     }

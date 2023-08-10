@@ -1,6 +1,7 @@
 #![cfg(test)]
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 
+use crate::errors::Error;
 use crate::test_util::setup_test_token;
 use soroban_sdk::{
     testutils::Address as _, token::AdminClient as TokenAdminClient, token::Client as TokenClient,
@@ -235,4 +236,43 @@ fn test_check_expired() {
     let env2 = Env::from_snapshot(snapshot2.clone());
     let client2 = setup_test_token(&env2, &admin);
     assert_eq!(client2.check_expired(), true);
+}
+
+#[test]
+fn test_redeem() {
+    // setup env with specific timestamp
+    let mut snapshot = Env::default().to_snapshot();
+    snapshot.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
+    let env = Env::from_snapshot(snapshot.clone());
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    // setup fake external token and pay the contract
+    let buyer = Address::random(&env);
+    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_admin = TokenAdminClient::new(&env, ext_token_addr);
+    ext_admin.mint(&buyer, &1000000);
+    let ext_client = TokenClient::new(&env, ext_token_addr);
+    ext_client.mock_all_auths();
+    ext_client.transfer(&buyer, &client.address, &1000000);
+
+    let supplier = Address::random(&env);
+    client.mint_original(&supplier);
+    assert_eq!(supplier, client.owner(&0));
+
+    // setup preconditions, and redeem should fail before all preconditions are met
+    client.set_external_token_provider(&ext_token_addr);
+    assert_eq!(client.try_redeem(&0).is_err(), true);
+    client.check_paid();
+    assert_eq!(client.try_redeem(&0).is_err(), true);
+    client.check_expired();
+
+    assert_eq!(ext_client.balance(&supplier), 0);
+    client.redeem(&0);
+
+    // check balance was transferred
+    assert_eq!(ext_client.balance(&supplier), 1000000);
+
+    // check NFT was burned
+    assert_eq!(client.try_owner(&0).is_err(), true)
 }
