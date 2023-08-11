@@ -5,22 +5,27 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
 
 ## Build
 1. ```bash
-   cd soroban```
+   cd soroban
+   ```
 2. ```bash
-   cargo build --target wasm32-unknown-unknown --release```
+   cargo build --target wasm32-unknown-unknown --release
+   ```
 
 ## Run Unit Tests
 1. ```bash
-   cd soroban```
+   cd soroban
+   ```
 2. ```bash
-   cargo test```
+   cargo test
+   ```
 
 ## Setup sandbox accounts on Soroban CLI
 1. ```bash
    soroban config identity generate admin && \
    soroban config identity generate acc1 && \
    soroban config identity address admin && \
-   soroban config identity address acc1```
+   soroban config identity address acc1
+   ```
 2. The addresses for the accounts will be output. Take note of the addresses which will be used to initialize the contract and mint the tokens.
 
 ## Run on Soroban CLI
