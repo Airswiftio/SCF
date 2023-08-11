@@ -239,6 +239,25 @@ fn test_check_expired() {
 }
 
 #[test]
+fn test_expire_auto_transfer() {
+    let mut snapshot = Env::default().to_snapshot();
+    snapshot.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
+    let env = Env::from_snapshot(snapshot.clone());
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    let to = Address::random(&env);
+    client.mint_original(&to);
+    assert_eq!(to, client.owner(&0));
+
+    client.split(&0, &vec![&env, 600000]);
+    assert_eq!(client.address, client.owner(&1));
+
+    assert_eq!(client.check_expired(), true);
+    assert_eq!(to, client.owner(&1));
+}
+
+#[test]
 fn test_redeem() {
     // setup env with specific timestamp
     let mut snapshot = Env::default().to_snapshot();

@@ -233,7 +233,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
     fn redeem(env: Env, id: i128) {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        if !read_expired(&env) || !read_paid(&env) {
+        if !read_expired(&env) || !read_paid(&env) || read_sub_nft_disabled(&env, id) {
             panic_with_error!(&env, Error::NotPermitted);
         }
 
