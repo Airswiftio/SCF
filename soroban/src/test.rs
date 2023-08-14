@@ -1,7 +1,7 @@
 #![cfg(test)]
 use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 
-use crate::errors::Error;
+use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
 use soroban_sdk::{
     testutils::Address as _, token::AdminClient as TokenAdminClient, token::Client as TokenClient,
@@ -80,7 +80,20 @@ fn test_split() {
     client.mint_original(&to);
     assert_eq!(1000000, client.amount(&0));
 
-    client.split(&0, &vec![&env, 300000_u32, 500000_u32]);
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 300000,
+                to: to.clone(),
+            },
+            SplitRequest {
+                amount: 500000,
+                to: to.clone(),
+            },
+        ],
+    );
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
@@ -108,11 +121,29 @@ fn test_split_nested() {
     client.mint_original(&to);
     assert_eq!(1000000, client.amount(&0));
 
-    client.split(&0, &vec![&env, 800000_u32]);
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 800000,
+                to: to.clone(),
+            },
+        ],
+    );
     assert_eq!(800000, client.amount(&1));
     // remaining token id 2 is worth 200k and belongs to buyer
 
-    client.split(&1, &vec![&env, 500000_u32]);
+    client.split(
+        &1,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 500000,
+                to: to.clone(),
+            },
+        ],
+    );
     assert_eq!(500000, client.amount(&3));
     assert_eq!(client.address, client.owner(&3));
     assert_eq!(1, client.parent(&3));
@@ -132,8 +163,26 @@ fn test_split_twice() {
 
     let to = Address::random(&env);
     client.mint_original(&to);
-    client.split(&0, &vec![&env, 500000_u32]);
-    client.split(&0, &vec![&env, 500000_u32]);
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 500000,
+                to: to.clone(),
+            },
+        ],
+    );
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 500000,
+                to: to.clone(),
+            },
+        ],
+    );
 }
 
 #[test]
@@ -148,7 +197,20 @@ fn test_split_exceed() {
     client.mint_original(&to);
     assert_eq!(1000000, client.amount(&0));
 
-    client.split(&0, &vec![&env, 500000_u32, 5000001_u32]);
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 500000,
+                to: to.clone(),
+            },
+            SplitRequest {
+                amount: 500001,
+                to: to.clone(),
+            },
+        ],
+    );
 }
 
 #[test]
@@ -250,7 +312,16 @@ fn test_expire_auto_transfer() {
     client.mint_original(&to);
     assert_eq!(to, client.owner(&0));
 
-    client.split(&0, &vec![&env, 600000]);
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 600000,
+                to: to.clone(),
+            },
+        ],
+    );
     assert_eq!(client.address, client.owner(&1));
 
     assert_eq!(client.check_expired(), true);
@@ -294,4 +365,27 @@ fn test_redeem() {
 
     // check NFT was burned
     assert_eq!(client.try_owner(&0).is_err(), true)
+}
+
+#[test]
+fn test_sign_off() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    let to = Address::random(&env);
+    client.mint_original(&to);
+    assert_eq!(to, client.owner(&0));
+
+    let split_req = SplitRequest {
+        amount: 600000,
+        to: to.clone(),
+    };
+    client.split(&0, &vec![&env, split_req.clone()]);
+    assert_eq!(client.address, client.owner(&1));
+    assert_eq!(split_req.clone(), client.pending_sign_off(&1));
+    client.sign_off(&1);
+    assert_eq!(to, client.owner(&1));
+    assert_eq!(true, client.try_pending_sign_off(&1).is_err());
 }

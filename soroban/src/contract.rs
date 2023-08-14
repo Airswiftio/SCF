@@ -5,15 +5,18 @@ use crate::errors::Error;
 use crate::event;
 use crate::interface::NonFungibleTokenTrait;
 use crate::metadata::{
-    read_expired, read_external_token_provider, read_name, read_paid, read_symbol, read_token_uri,
-    write_expired, write_external_token_provider, write_paid,
+    read_expired, read_external_token_provider, read_paid, write_expired,
+    write_external_token_provider, write_paid,
 };
 use crate::order_info::{read_end_time, read_total_amount, write_order_info};
 use crate::owner::{check_owner, read_owner, write_owner};
-use crate::storage_types::INSTANCE_BUMP_AMOUNT;
-use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
+use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT};
+use crate::sub_nft::{
+    read_split_request, read_sub_nft, read_sub_nft_disabled, remove_split_request,
+    write_split_request, write_sub_nft, write_sub_nft_disabled,
+};
 use soroban_sdk::{
-    contract, contractimpl, log, panic_with_error, token, Address, Env, String, Symbol, Vec,
+    contract, contractimpl, panic_with_error, token, Address, Env, String, Symbol, Vec,
 };
 
 #[contract]
@@ -65,21 +68,6 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
         write_administrator(&env, &new_admin);
         event::set_admin(&env, admin, new_admin);
-    }
-
-    fn name(env: Env) -> String {
-        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        read_name(&env)
-    }
-
-    fn symbol(env: Env) -> Symbol {
-        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        read_symbol(&env)
-    }
-
-    fn token_uri(env: Env, id: i128) -> String {
-        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        read_token_uri(&env, id)
     }
 
     fn appr(env: Env, owner: Address, operator: Address, id: i128) {
@@ -182,13 +170,13 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::burn(&env, from, id);
     }
 
-    fn split(env: Env, id: i128, amounts: Vec<u32>) {
+    fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128> {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
         if read_sub_nft_disabled(&env, id) {
             // if the NFT is disabled, it has already been split
             panic_with_error!(&env, Error::NotPermitted);
         }
-        if amounts.len() == 0 {
+        if splits.len() == 0 {
             panic_with_error!(&env, Error::InvalidArgs);
         }
         if read_expired(&env) {
@@ -199,20 +187,25 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let contract_addr = env.current_contract_address();
 
         let root = read_sub_nft(&env, id);
-        if amounts.iter().sum::<u32>() > root.amount {
+        let mut sum = 0;
+        for req in splits.clone() {
+            sum += req.amount;
+        }
+        if sum > root.amount {
             panic_with_error!(&env, Error::AmountTooMuch);
         }
 
         let mut remaining = root.amount;
         let mut new_ids = Vec::new(&env);
-        for amount in amounts {
+        for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_nft(&env, new_id, id, amount);
+            write_sub_nft(&env, new_id, id, req.amount);
             write_sub_nft_disabled(&env, new_id, false);
+            write_split_request(&env, new_id, req.clone());
             write_owner(&env, new_id, Some(contract_addr.clone()));
             increment_supply(&env);
             new_ids.push_back(new_id);
-            remaining -= amount;
+            remaining -= req.amount;
         }
 
         // if root amount > 0, create another sub nft to represent the remaining amount belonging to original owner
@@ -229,6 +222,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         write_sub_nft_disabled(&env, id, true);
 
         event::split(&env, owner, id, new_ids.clone());
+        new_ids
     }
 
     fn redeem(env: Env, id: i128) {
@@ -304,5 +298,26 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             }
         }
         expired
+    }
+
+    fn pending_sign_off(env: Env, id: i128) -> SplitRequest {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let req = read_split_request(&env, id);
+        req
+    }
+
+    fn sign_off(env: Env, id: i128) {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        let req = read_split_request(&env, id);
+        req.to.require_auth();
+
+        let owner = read_owner(&env, id);
+        if owner != env.current_contract_address() {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
+        write_owner(&env, id, Some(req.to.clone()));
+        remove_split_request(&env, id);
+
+        event::transfer(&env, owner, req.to, id);
     }
 }

@@ -1,6 +1,6 @@
+use crate::errors::Error;
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT};
-use crate::errors::{Error};
-use soroban_sdk::{panic_with_error, Env, Address};
+use soroban_sdk::{panic_with_error, Address, Env};
 
 pub fn read_owner(env: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
@@ -8,7 +8,7 @@ pub fn read_owner(env: &Env, id: i128) -> Address {
         Some(balance) => {
             env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
             balance
-        },
+        }
         None => panic_with_error!(env, Error::NotFound),
     }
 }

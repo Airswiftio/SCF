@@ -1,5 +1,7 @@
 use soroban_sdk::{Address, Env, String, Symbol, Vec};
 
+use crate::storage_types::SplitRequest;
+
 pub trait NonFungibleTokenTrait {
     // --------------------------------------------------------------------------------
     // Admin interface
@@ -11,19 +13,6 @@ pub trait NonFungibleTokenTrait {
     /// If "admin" is the administrator, set the administrator to "new_admin".
     /// Emit event with topics = ["set_admin", admin: Address], data = [new_admin: Address]
     fn set_admin(env: Env, new_admin: Address);
-
-    // --------------------------------------------------------------------------------
-    // Metadata interface
-    // --------------------------------------------------------------------------------
-
-    // Get the name for this token.
-    fn name(env: Env) -> String;
-
-    // Get the symbol for this token.
-    fn symbol(env: Env) -> Symbol;
-
-    // Get the uniform resource identifier for token "id".
-    fn token_uri(env: Env, id: i128) -> String;
 
     // --------------------------------------------------------------------------------
     // Token interface
@@ -70,7 +59,7 @@ pub trait NonFungibleTokenTrait {
     fn mint_original(env: Env, to: Address);
 
     /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
-    fn split(env: Env, id: i128, amounts: Vec<u32>);
+    fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128>;
 
     /// Burn a specified NFT and transfer funds to the owner.
     fn redeem(env: Env, id: i128);
@@ -87,6 +76,12 @@ pub trait NonFungibleTokenTrait {
 
     /// set the contract address for the external token (e.g. USDC)
     fn set_external_token_provider(env: Env, contract_addr: Address);
+
+    /// retrieves a pending split request for a given token "id"
+    fn pending_sign_off(env: Env, id: i128) -> SplitRequest;
+
+    /// approve and receive the NFT according to SplitRequest for "id"
+    fn sign_off(env: Env, id: i128);
 
     // --------------------------------------------------------------------------------
     // Implementation Interface
@@ -106,9 +101,4 @@ pub trait NonFungibleTokenTrait {
         start_time: u64,
         end_time: u64,
     );
-}
-
-pub enum WriteType {
-    Add,
-    Remove,
 }
