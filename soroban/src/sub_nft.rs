@@ -41,30 +41,3 @@ pub fn write_sub_nft_disabled(env: &Env, id: i128, disabled: bool) {
     env.storage().persistent().set(&key, &disabled);
     env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
 }
-
-pub fn read_split_request(env: &Env, id: i128) -> SplitRequest {
-    let key = DataKey::SplitRequest(id);
-    match env
-        .storage()
-        .persistent()
-        .get::<DataKey, SplitRequest>(&key)
-    {
-        Some(data) => {
-            env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
-            data
-        }
-        None => panic_with_error!(env, Error::NotFound),
-    }
-}
-
-pub fn write_split_request(env: &Env, id: i128, req: SplitRequest) {
-    let key = DataKey::SplitRequest(id);
-    env.storage().persistent().set(&key, &req);
-    env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
-}
-
-pub fn remove_split_request(env: &Env, id: i128) {
-    let key = DataKey::SplitRequest(id);
-    env.storage().persistent().remove(&key);
-    env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
-}

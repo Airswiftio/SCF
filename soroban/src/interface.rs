@@ -78,7 +78,7 @@ pub trait NonFungibleTokenTrait {
     fn set_external_token_provider(env: Env, contract_addr: Address);
 
     /// retrieves a pending split request for a given token "id"
-    fn pending_sign_off(env: Env, id: i128) -> SplitRequest;
+    fn recipient(env: Env, id: i128) -> Address;
 
     /// approve and receive the NFT according to SplitRequest for "id"
     fn sign_off(env: Env, id: i128);

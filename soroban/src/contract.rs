@@ -9,12 +9,9 @@ use crate::metadata::{
     write_external_token_provider, write_paid,
 };
 use crate::order_info::{read_end_time, read_total_amount, write_order_info};
-use crate::owner::{check_owner, read_owner, write_owner};
+use crate::owner::{check_owner, read_owner, read_recipient, write_owner, write_recipient};
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT};
-use crate::sub_nft::{
-    read_split_request, read_sub_nft, read_sub_nft_disabled, remove_split_request,
-    write_split_request, write_sub_nft, write_sub_nft_disabled,
-};
+use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, token, Address, Env, String, Symbol, Vec,
 };
@@ -201,7 +198,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             let new_id = read_supply(&env);
             write_sub_nft(&env, new_id, id, req.amount);
             write_sub_nft_disabled(&env, new_id, false);
-            write_split_request(&env, new_id, req.clone());
+            write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
             increment_supply(&env);
             new_ids.push_back(new_id);
@@ -300,24 +297,27 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         expired
     }
 
-    fn pending_sign_off(env: Env, id: i128) -> SplitRequest {
+    fn recipient(env: Env, id: i128) -> Address {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        let req = read_split_request(&env, id);
-        req
+        read_recipient(&env, id)
     }
 
     fn sign_off(env: Env, id: i128) {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
-        let req = read_split_request(&env, id);
-        req.to.require_auth();
 
         let owner = read_owner(&env, id);
-        if owner != env.current_contract_address() {
+        if owner != env.current_contract_address()
+            || read_sub_nft_disabled(&env, id)
+            || read_expired(&env)
+        {
             panic_with_error!(&env, Error::NotPermitted);
         }
-        write_owner(&env, id, Some(req.to.clone()));
-        remove_split_request(&env, id);
 
-        event::transfer(&env, owner, req.to, id);
+        let recipient = read_recipient(&env, id);
+        recipient.require_auth();
+
+        write_owner(&env, id, Some(recipient.clone()));
+
+        event::transfer(&env, owner, recipient, id);
     }
 }

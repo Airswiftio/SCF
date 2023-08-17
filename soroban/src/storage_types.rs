@@ -35,7 +35,7 @@ pub enum DataKey {
     Expired,
     Paid,
     ExternalTokenProvider,
-    SplitRequest(i128),
+    Recipient(i128),
 }
 
 #[derive(Clone)]

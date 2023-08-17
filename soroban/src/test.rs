@@ -384,8 +384,7 @@ fn test_sign_off() {
     };
     client.split(&0, &vec![&env, split_req.clone()]);
     assert_eq!(client.address, client.owner(&1));
-    assert_eq!(split_req.clone(), client.pending_sign_off(&1));
+    assert_eq!(to, client.recipient(&1));
     client.sign_off(&1);
     assert_eq!(to, client.owner(&1));
-    assert_eq!(true, client.try_pending_sign_off(&1).is_err());
 }

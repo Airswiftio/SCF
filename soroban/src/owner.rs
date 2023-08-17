@@ -24,3 +24,20 @@ pub fn check_owner(env: &Env, auth: &Address, id: i128) {
         panic_with_error!(env, Error::NotOwned)
     }
 }
+
+pub fn read_recipient(env: &Env, id: i128) -> Address {
+    let key = DataKey::Recipient(id);
+    match env.storage().persistent().get::<DataKey, Address>(&key) {
+        Some(data) => {
+            env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
+            data
+        }
+        None => panic_with_error!(env, Error::NotFound),
+    }
+}
+
+pub fn write_recipient(env: &Env, id: i128, recipient: &Address) {
+    let key = DataKey::Recipient(id);
+    env.storage().persistent().set(&key, recipient);
+    env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
+}
