@@ -9,7 +9,9 @@ use crate::metadata::{
     write_external_token_provider, write_paid,
 };
 use crate::order_info::{read_end_time, read_total_amount, write_order_info};
-use crate::owner::{check_owner, read_owner, read_recipient, write_owner, write_recipient};
+use crate::owner::{
+    check_owner, read_all_owned, read_owner, read_recipient, write_owner, write_recipient,
+};
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT};
 use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
 use soroban_sdk::{
@@ -106,6 +108,11 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn owner(env: Env, id: i128) -> Address {
         env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
         read_owner(&env, id)
+    }
+
+    fn get_all_owned(env: Env, address: Address) -> Vec<i128> {
+        env.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+        read_all_owned(&env, address)
     }
 
     fn is_disabled(env: Env, id: i128) -> bool {

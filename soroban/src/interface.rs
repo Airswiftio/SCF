@@ -41,6 +41,9 @@ pub trait NonFungibleTokenTrait {
     /// Get the owner of "id" token.
     fn owner(env: Env, id: i128) -> Address;
 
+    /// Get all NFTs ids owned by address
+    fn get_all_owned(env: Env, address: Address) -> Vec<i128>;
+
     /// Get the "disabled" value of "id" token.
     fn is_disabled(env: Env, id: i128) -> bool;
 

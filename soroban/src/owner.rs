@@ -1,6 +1,8 @@
+use crate::balance::read_supply;
 use crate::errors::Error;
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT};
-use soroban_sdk::{panic_with_error, Address, Env};
+use crate::sub_nft::read_sub_nft_disabled;
+use soroban_sdk::{panic_with_error, Address, Env, Vec};
 
 pub fn read_owner(env: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
@@ -40,4 +42,18 @@ pub fn write_recipient(env: &Env, id: i128, recipient: &Address) {
     let key = DataKey::Recipient(id);
     env.storage().persistent().set(&key, recipient);
     env.storage().persistent().bump(&key, BALANCE_BUMP_AMOUNT);
+}
+
+pub fn read_all_owned(env: &Env, address: Address) -> Vec<i128> {
+    let mut ids = Vec::new(&env);
+    let supply = read_supply(&env);
+    if supply > 0 {
+        for n in 0..supply {
+            let owner = read_owner(&env, n);
+            if owner == address && !read_sub_nft_disabled(&env, n) {
+                ids.push_back(n);
+            }
+        }
+    }
+    ids
 }

@@ -388,3 +388,36 @@ fn test_sign_off() {
     client.sign_off(&1);
     assert_eq!(to, client.owner(&1));
 }
+
+#[test]
+fn test_get_all_owned() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::random(&env);
+    let client = setup_test_token(&env, &admin);
+
+    let to = Address::random(&env);
+    client.mint_original(&to);
+
+    assert_eq!(vec![&env, 0], client.get_all_owned(&to));
+
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 100000,
+                to: to.clone(),
+            },
+            SplitRequest {
+                amount: 200000,
+                to: to.clone(),
+            },
+        ],
+    );
+    assert_eq!(vec![&env, 3], client.get_all_owned(&to));
+
+    client.sign_off(&1);
+    client.sign_off(&2);
+    assert_eq!(vec![&env, 1, 2, 3], client.get_all_owned(&to));
+}
