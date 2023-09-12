@@ -69,4 +69,5 @@ These steps assume that you have Futurenet set up already. If not, please refer 
    ```
    0 0 1 * * /home/ubuntu/scf/soroban/contract_deployer/bump.sh
    0 0 1 * * /home/ubuntu/scf/soroban/scf_pool/bump.sh
+   0 0 1 * * /home/ubuntu/scf/soroban/scf_soroban/bump.sh
    ```
