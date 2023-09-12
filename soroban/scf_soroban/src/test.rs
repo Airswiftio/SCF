@@ -397,6 +397,8 @@ fn test_get_all_owned() {
     let client = setup_test_token(&env, &admin);
 
     let to = Address::random(&env);
+    assert_eq!(vec![&env], client.get_all_owned(&to));
+
     client.mint_original(&to);
 
     assert_eq!(vec![&env, 0], client.get_all_owned(&to));

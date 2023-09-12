@@ -8,16 +8,11 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
    cd soroban
    ```
 2. ```bash
-   cargo build --target wasm32-unknown-unknown --release
+   make
    ```
 
 ## Run Unit Tests
-1. ```bash
-   cd soroban
-   ```
-2. ```bash
-   cargo test
-   ```
+1. `cd` to each desired sub-directory of the `soroban` folder, and run `cargo test`
 
 ## Setup sandbox accounts on Soroban CLI
 1. ```bash
@@ -30,6 +25,9 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
 
 ## Run on Soroban CLI
 1. ```bash
+   cd soroban/scf_soroban
+   ```
+2. ```bash
    soroban contract invoke \
    --wasm target/wasm32-unknown-unknown/release/scf_soroban.wasm \
    --id 1 \
@@ -46,7 +44,7 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
    --end_date "2024-08-04" \
    --admin [YOUR_ADMIN_ADDRESS]
    ```
-2. ```bash
+3. ```bash
    soroban contract invoke \
    --wasm target/wasm32-unknown-unknown/release/scf_soroban.wasm \
    --id 1 \
