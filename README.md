@@ -16,8 +16,8 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
 
 ## Setup identities on Soroban CLI
 1. ```bash
-   soroban config identity generate admin && \
-   soroban config identity generate acc1 && \
+   soroban config identity generate --global admin && \
+   soroban config identity generate --global acc1 && \
    soroban config identity address admin && \
    soroban config identity address acc1
    ```
@@ -28,14 +28,14 @@ Follow the steps according to https://soroban.stellar.org/docs/getting-started/s
 These steps assume that you have Futurenet set up already. If not, please refer to https://soroban.stellar.org/docs/getting-started/deploy-to-futurenet#configure-futurenet-in-your-cli
 1. `cd` to the contract's subdirectory.
    ```bash
-   cd soroban/scf_soroban
+   cd soroban/contract_deployer
    ```
 2. Deploy the contract.
    ```bash
    soroban contract deploy \
    --network futurenet \
    --source-account admin \
-   --wasm target/wasm32-unknown-unknown/release/scf_soroban.wasm
+   --wasm target/wasm32-unknown-unknown/release/contract_deployer.wasm
    ```
 3. Bump the contract lifetime. Replace CONTRACT_ID with the output contract ID from the previous step.
    ```bash
@@ -46,4 +46,11 @@ These steps assume that you have Futurenet set up already. If not, please refer 
    --ledgers-to-expire 6312000 \
    --id CONTRACT_ID 
    ```
-4. To keep the contract from expiring, you may set up a cron job that runs the same command from step 3 on a monthly basis.
+
+## Prevent contract expiration 
+1. To keep the contract from expiring after some time, you may want to set up a cron job that runs the same command from step 3 on a monthly basis. Replace the CONTRACT_ID in the bump.sh scripts located in `contract_deployer` and `scf_pool`.
+2. Edit your crontab configuration using `crontab -e`. Add lines such as the following to your crontab, replacing the path to the bump.sh files with your own. These commands run bump.sh on the 1st of every month, which should be sufficiently frequent even on accelerated standalone network ledgers.
+   ```
+   0 0 1 * * /home/ubuntu/scf/soroban/contract_deployer/bump.sh
+   0 0 1 * * /home/ubuntu/scf/soroban/scf_pool/bump.sh
+   ```
