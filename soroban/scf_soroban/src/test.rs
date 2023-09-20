@@ -4,8 +4,8 @@ use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
 use soroban_sdk::{
-    testutils::Address as _, token::AdminClient as TokenAdminClient, token::Client as TokenClient,
-    vec, Address, Env, String,
+    testutils::Address as _, token::Client as TokenClient, token::StellarAssetClient, vec, Address,
+    Env, String,
 };
 
 #[test]
@@ -268,7 +268,7 @@ fn test_check_paid() {
 
     // setup fake external token
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
-    let ext_admin = TokenAdminClient::new(&env, ext_token_addr);
+    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&user, &1000000);
     let ext_client = TokenClient::new(&env, ext_token_addr);
     ext_client.mock_all_auths();
@@ -340,10 +340,10 @@ fn test_redeem() {
     // setup fake external token and pay the contract
     let buyer = Address::random(&env);
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
-    let ext_admin = TokenAdminClient::new(&env, ext_token_addr);
+    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&buyer, &1000000);
     let ext_client = TokenClient::new(&env, ext_token_addr);
-    ext_client.mock_all_auths();
+    ext_client.mock_all_auths_allowing_non_root_auth();
     ext_client.transfer(&buyer, &client.address, &1000000);
 
     let supplier = Address::random(&env);
