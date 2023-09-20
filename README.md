@@ -43,24 +43,17 @@ These steps assume that you have Futurenet set up already. If not, please refer 
    --network futurenet \
    --source-account admin \
    --durability persistent \
-   --ledgers-to-expire 6312000 \
+   --ledgers-to-expire 3000000 \
    --id CONTRACT_ID 
    ```
-4. The contract code needs to be bumped as well. Use the `soroban contract install` to get the wasm hash.
-   ```bash
-   soroban contract install \
-   --network futurenet \
-   --source-account admin \
-   --wasm target/wasm32-unknown-unknown/release/contract_deployer.wasm
-   ```
-5. Bump the contract code, replacing WASM_HASH with the hash output from the previous step.
+4. The contract code needs to be bumped as well. 
    ```bash
    soroban contract bump \
    --network futurenet \
    --source-account admin \
    --durability persistent \
-   --ledgers-to-expire 6312000 \
-   --wasm WASM_HASH
+   --ledgers-to-expire 3000000 \
+   --wasm target/wasm32-unknown-unknown/release/contract_deployer.wasm
    ```
 
 ## Prevent contract expiration 
