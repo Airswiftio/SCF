@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, String, Symbol, Vec};
+use soroban_sdk::{Address, Env, String, Vec};
 
 use crate::storage_types::SplitRequest;
 

@@ -4,18 +4,16 @@ use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
 use crate::interface::NonFungibleTokenTrait;
-use crate::metadata::{
-    read_expired, read_external_token_provider, read_paid, write_expired,
-    write_external_token_provider, write_paid,
-};
-use crate::order_info::{read_end_time, read_total_amount, write_order_info};
+use crate::metadata::{read_external_token_provider, write_external_token_provider};
+use crate::order_info::{read_total_amount, write_order_info};
+use crate::order_state::{update_and_read_expired, update_and_read_paid};
 use crate::owner::{
     check_owner, read_all_owned, read_owner, read_recipient, write_owner, write_recipient,
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Env, String, Symbol, Vec,
+    contract, contractimpl, panic_with_error, token, Address, Env, String, Vec,
 };
 
 #[contract]
@@ -121,6 +119,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        update_and_read_expired(&env);
         read_owner(&env, id)
     }
 
@@ -128,6 +127,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        update_and_read_expired(&env);
         read_all_owned(&env, address)
     }
 
@@ -139,6 +139,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        update_and_read_expired(&env);
         check_owner(&env, &from, id);
         from.require_auth();
         write_owner(&env, id, Some(to.clone()));
@@ -149,6 +150,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        update_and_read_expired(&env);
         check_owner(&env, &from, id);
         spender.require_auth();
 
@@ -192,6 +194,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let admin = read_administrator(&env);
         admin.require_auth();
 
+        update_and_read_expired(&env);
         let from = read_owner(&env, id);
         write_owner(&env, id, None);
 
@@ -209,7 +212,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         if splits.len() == 0 {
             panic_with_error!(&env, Error::InvalidArgs);
         }
-        if read_expired(&env) {
+        if update_and_read_expired(&env) {
             panic_with_error!(&env, Error::NotPermitted);
         }
         let owner = read_owner(&env, id);
@@ -259,7 +262,10 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        if !read_expired(&env) || !read_paid(&env) || read_sub_nft_disabled(&env, id) {
+        if !update_and_read_expired(&env)
+            || !update_and_read_paid(&env)
+            || read_sub_nft_disabled(&env, id)
+        {
             panic_with_error!(&env, Error::NotPermitted);
         }
 
@@ -298,46 +304,14 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        let paid_cached = read_paid(&env);
-        if paid_cached {
-            return true;
-        }
-        let client = token::Client::new(&env, &read_external_token_provider(&env));
-        let balance = client.balance(&env.current_contract_address());
-        let paid = balance >= i128::from(read_total_amount(&env));
-        if paid {
-            write_paid(&env, true);
-        }
-        paid
+        update_and_read_paid(&env)
     }
 
     fn check_expired(env: Env) -> bool {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        let expired_cached = read_expired(&env);
-        if expired_cached {
-            return true;
-        }
-        let ledger = env.ledger();
-        let expired = ledger.timestamp() >= read_end_time(&env);
-        if expired {
-            write_expired(&env, true);
-            // transfer unclaimed NFTs to the root NFT's owner address
-            let last_id = read_supply(&env);
-            if last_id > 0 {
-                let to = read_owner(&env, 0);
-                let contract_addr = &env.current_contract_address();
-                for i in 1..last_id {
-                    let owner = read_owner(&env, i);
-                    if owner == contract_addr.clone() {
-                        write_owner(&env, i, Some(to.clone()));
-                        event::transfer(&env, contract_addr.clone(), to.clone(), i);
-                    }
-                }
-            }
-        }
-        expired
+        update_and_read_expired(&env)
     }
 
     fn recipient(env: Env, id: i128) -> Address {
@@ -352,11 +326,9 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
+        let expired = update_and_read_expired(&env);
         let owner = read_owner(&env, id);
-        if owner != env.current_contract_address()
-            || read_sub_nft_disabled(&env, id)
-            || read_expired(&env)
-        {
+        if owner != env.current_contract_address() || read_sub_nft_disabled(&env, id) || expired {
             panic_with_error!(&env, Error::NotPermitted);
         }
 

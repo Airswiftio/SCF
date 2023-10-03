@@ -1,6 +1,6 @@
 use crate::errors::Error;
 use crate::storage_types::{
-    DataKey, SplitRequest, SubNFT, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD,
+    DataKey, SubNFT, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD,
 };
 use soroban_sdk::{panic_with_error, Env};
 
