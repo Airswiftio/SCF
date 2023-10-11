@@ -12,9 +12,7 @@ use crate::owner::{
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
-use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, Env, String, Vec,
-};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String, Vec};
 
 #[contract]
 pub struct NonFungibleToken;
