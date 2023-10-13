@@ -71,20 +71,23 @@ pub trait NonFungibleTokenTrait {
     /// Emit event with topics = ["burn", from: Address], data = [id: i128]
     fn burn(env: Env, id: i128);
 
-    /// checks usdc balance, and unlocks redemption if the balance >= requirement
+    /// checks whether the payoff step was completed
     fn check_paid(env: Env) -> bool;
 
     /// use env timestamp and check against stored expiry time
     fn check_expired(env: Env) -> bool;
 
     /// set the contract address for the external token (e.g. USDC)
-    fn set_external_token_provider(env: Env, contract_addr: Address);
+    fn set_external_token_provider(env: Env, contract_addr: Address, decimals: u32);
 
     /// retrieves a pending split request for a given token "id"
     fn recipient(env: Env, id: i128) -> Address;
 
     /// approve and receive the NFT according to SplitRequest for "id"
     fn sign_off(env: Env, id: i128);
+
+    /// pay off OrderInfo.amount using token
+    fn pay_off(env: Env, from: Address);
 
     // --------------------------------------------------------------------------------
     // Implementation Interface

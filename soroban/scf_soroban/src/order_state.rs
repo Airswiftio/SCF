@@ -1,10 +1,10 @@
 use crate::balance::read_supply;
 use crate::event;
-use crate::metadata::read_external_token_provider;
-use crate::order_info::{read_end_time, read_total_amount};
+
+use crate::order_info::{read_end_time};
 use crate::owner::{read_owner, write_owner};
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use soroban_sdk::{token, Env};
+use soroban_sdk::{Env};
 
 pub fn update_and_read_expired(env: &Env) -> bool {
     let expired_cached = read_expired(&env);
@@ -32,20 +32,6 @@ pub fn update_and_read_expired(env: &Env) -> bool {
     expired
 }
 
-pub fn update_and_read_paid(env: &Env) -> bool {
-    let paid_cached = read_paid(&env);
-    if paid_cached {
-        return true;
-    }
-    let client = token::Client::new(&env, &read_external_token_provider(&env));
-    let balance = client.balance(&env.current_contract_address());
-    let paid = balance >= i128::from(read_total_amount(&env));
-    if paid {
-        write_paid(&env, true);
-    }
-    paid
-}
-
 fn read_expired(env: &Env) -> bool {
     let key = DataKey::Expired;
     match env.storage().persistent().get::<DataKey, bool>(&key) {
@@ -67,7 +53,7 @@ fn write_expired(env: &Env, val: bool) {
         .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-fn read_paid(env: &Env) -> bool {
+pub fn read_paid(env: &Env) -> bool {
     let key = DataKey::Paid;
     match env.storage().persistent().get::<DataKey, bool>(&key) {
         Some(data) => {
@@ -80,7 +66,7 @@ fn read_paid(env: &Env) -> bool {
     }
 }
 
-fn write_paid(env: &Env, val: bool) {
+pub fn write_paid(env: &Env, val: bool) {
     let key = DataKey::Paid;
     env.storage().persistent().set(&key, &val);
     env.storage()

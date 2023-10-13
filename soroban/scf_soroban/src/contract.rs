@@ -4,9 +4,9 @@ use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
 use crate::interface::NonFungibleTokenTrait;
-use crate::metadata::{read_external_token_provider, write_external_token_provider};
+use crate::metadata::{read_external_token, write_external_token};
 use crate::order_info::{read_total_amount, write_order_info};
-use crate::order_state::{update_and_read_expired, update_and_read_paid};
+use crate::order_state::{read_paid, update_and_read_expired, write_paid};
 use crate::owner::{
     check_owner, read_all_owned, read_owner, read_recipient, write_owner, write_recipient,
 };
@@ -260,10 +260,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        if !update_and_read_expired(&env)
-            || !update_and_read_paid(&env)
-            || read_sub_nft_disabled(&env, id)
-        {
+        if !update_and_read_expired(&env) || !read_paid(&env) || read_sub_nft_disabled(&env, id) {
             panic_with_error!(&env, Error::NotPermitted);
         }
 
@@ -275,12 +272,10 @@ impl NonFungibleTokenTrait for NonFungibleToken {
 
         // send funds to owner address
         let sub_nft = read_sub_nft(&env, id);
-        let client = token::Client::new(&env, &read_external_token_provider(&env));
-        client.transfer(
-            &env.current_contract_address(),
-            &owner,
-            &i128::from(sub_nft.amount),
-        );
+        let ext_token = read_external_token(&env);
+        let client = token::Client::new(&env, &ext_token.contract_addr);
+        let amount = i128::from(sub_nft.amount) * 10i128.pow(ext_token.decimals);
+        client.transfer(&env.current_contract_address(), &owner, &amount);
 
         // burn the token
         write_owner(&env, id, None);
@@ -288,21 +283,21 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         event::redeem(&env, owner, id);
     }
 
-    fn set_external_token_provider(env: Env, contract_addr: Address) {
+    fn set_external_token_provider(env: Env, contract_addr: Address, decimals: u32) {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
-        write_external_token_provider(&env, contract_addr);
+        write_external_token(&env, contract_addr, decimals);
     }
 
     fn check_paid(env: Env) -> bool {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        update_and_read_paid(&env)
+        read_paid(&env)
     }
 
     fn check_expired(env: Env) -> bool {
@@ -336,5 +331,24 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         write_owner(&env, id, Some(recipient.clone()));
 
         event::transfer(&env, owner, recipient, id);
+    }
+
+    fn pay_off(env: Env, from: Address) {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let paid = read_paid(&env);
+        if paid {
+            panic_with_error!(&env, Error::NotEmpty);
+        }
+        let ext_token = read_external_token(&env);
+        let client = token::Client::new(&env, &ext_token.contract_addr);
+        let base_amount = read_total_amount(&env);
+        let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
+
+        from.require_auth();
+        client.transfer(&from, &env.current_contract_address(), &i128::from(amount));
+        write_paid(&env, true);
     }
 }

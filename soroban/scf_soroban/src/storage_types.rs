@@ -38,7 +38,7 @@ pub enum DataKey {
     OrderInfo,
     Expired,
     Paid,
-    ExternalTokenProvider,
+    ExternalToken,
     Recipient(i128),
 }
 
@@ -54,4 +54,11 @@ pub struct SubNFT {
 pub struct SplitRequest {
     pub amount: u32,
     pub to: Address,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalToken {
+    pub contract_addr: Address,
+    pub decimals: u32,
 }

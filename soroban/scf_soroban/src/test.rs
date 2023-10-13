@@ -259,7 +259,7 @@ fn test_burn() {
 }
 
 #[test]
-fn test_check_paid() {
+fn test_pay_off() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
@@ -269,18 +269,13 @@ fn test_check_paid() {
     // setup fake external token
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&user, &1000000);
-    let ext_client = TokenClient::new(&env, ext_token_addr);
-    ext_client.mock_all_auths();
+    ext_admin.mint(&user, &10000000000000);
 
-    client.set_external_token_provider(&ext_token_addr);
+    client.set_external_token_provider(&ext_token_addr, &7);
     assert_eq!(client.check_paid(), false);
 
-    ext_client.transfer(&user, &client.address, &500000);
-    assert_eq!(client.check_paid(), false); // total amount is 1000000, only 500000 was paid
-
-    ext_client.transfer(&user, &client.address, &500000);
-    assert_eq!(client.check_paid(), true); // successfully paid the rest of the amount
+    client.pay_off(&user);
+    assert_eq!(client.check_paid(), true);
 }
 
 #[test]
@@ -341,27 +336,28 @@ fn test_redeem() {
     let buyer = Address::random(&env);
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&buyer, &1000000);
+    ext_admin.mint(&buyer, &10000000000000);
     let ext_client = TokenClient::new(&env, ext_token_addr);
     ext_client.mock_all_auths_allowing_non_root_auth();
-    ext_client.transfer(&buyer, &client.address, &1000000);
 
     let supplier = Address::random(&env);
     client.mint_original(&supplier);
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
-    client.set_external_token_provider(&ext_token_addr);
+    client.set_external_token_provider(&ext_token_addr, &7);
     assert_eq!(client.try_redeem(&0).is_err(), true);
     client.check_paid();
     assert_eq!(client.try_redeem(&0).is_err(), true);
     client.check_expired();
 
     assert_eq!(ext_client.balance(&supplier), 0);
+
+    client.pay_off(&buyer);
     client.redeem(&0);
 
     // check balance was transferred
-    assert_eq!(ext_client.balance(&supplier), 1000000);
+    assert_eq!(ext_client.balance(&supplier), 10000000000000);
 
     // check NFT was burned
     assert_eq!(client.try_owner(&0).is_err(), true)
