@@ -1,14 +1,15 @@
 //! This contract demonstrates a sample implementation of the Soroban token
 //! interface.
-use crate::admin::{has_administrator, read_administrator, write_administrator};
+use crate::admin::{has_administrator, write_administrator};
+use crate::errors::Error;
 use soroban_sdk::{
-    contract, contractimpl, symbol_short, vec, Address, Bytes, BytesN, Env, IntoVal, String,
-    Symbol, Val, Vec,
+    contract, contractimpl, panic_with_error, Address, BytesN, Env,
+    IntoVal, Symbol, Val, Vec,
 };
 
 pub trait DeployerTrait {
     fn initialize(e: Env, admin: Address);
-    fn DeployContract(
+    fn deploy_contract(
         e: Env,
         deployer: Address,
         token_wasm_hash: BytesN<32>,
@@ -25,12 +26,12 @@ pub struct Deployer;
 impl DeployerTrait for Deployer {
     fn initialize(e: Env, admin: Address) {
         if has_administrator(&e) {
-            panic!("already initialized")
+            panic_with_error!(&e, Error::AlreadyInitialized);
         }
         write_administrator(&e, &admin);
     }
 
-    fn DeployContract(
+    fn deploy_contract(
         e: Env,
         deployer: Address,
         token_wasm_hash: BytesN<32>,
@@ -42,7 +43,7 @@ impl DeployerTrait for Deployer {
             deployer.require_auth();
         }
         if init_fn_list.len() != init_args_list.len() {
-            panic!("init arguments length mismatch")
+            panic_with_error!(&e, Error::ArgumentLengthMismatch);
         }
 
         let deployed_address = e
