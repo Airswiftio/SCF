@@ -23,8 +23,26 @@ pub struct HashMetadata {
 
 #[derive(Clone)]
 #[contracttype]
+pub struct ApprovalAll {
+    pub operator: Address,
+    pub owner: Address,
+}
+
+#[derive(Clone)]
+#[contracttype]
+pub enum ApprovalKey {
+    All(ApprovalAll),
+    ID(i128),
+}
+
+#[derive(Clone)]
+#[contracttype]
 pub enum DataKey {
     Admin,
     ExtToken,
-    Metadata(Address),
+    Supply,
+    Metadata(i128),
+    Amount(i128),
+    Owner(i128),
+    Approval(ApprovalKey),
 }

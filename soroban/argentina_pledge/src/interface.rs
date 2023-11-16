@@ -48,10 +48,10 @@ pub trait TokenizedCertificateTrait {
     fn get_amount(e: Env, id: i128);
 
     /// Transfers USDC to the contract address, and transfers ownership of the TC to the caller.
-    fn pledge(e: Env, id: i128);
+    fn pledge(e: Env, from: Address, id: i128);
 
     /// Burns the TC in exchange for its 'amount' value in USDC to be sent to the owner.
-    fn redeem(e: Env, id: i128);
+    fn redeem(e: Env, to: Address, id: i128);
 
     /// Returns the owner of a given TC
     fn get_owner(e: Env, id: i128);

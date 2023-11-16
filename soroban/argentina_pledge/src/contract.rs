@@ -2,8 +2,13 @@ use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Env, String
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
+    approval::{read_approval, read_approval_all, write_approval, write_approval_all},
+    balance::{increment_supply, read_supply},
+    errors::Error,
+    event,
     ext_token::write_ext_token,
     interface::TokenizedCertificateTrait,
+    owner::{check_owner, write_owner},
     storage_types::{
         ExtTokenInfo, HashMetadata, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD,
     },
@@ -41,22 +46,96 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_admin(&e, &new_admin);
+        event::set_admin(&e, admin, new_admin)
     }
 
     fn mint(e: Env, amount: u32, po_hash: String, invoice_hash: String, bol_hash: String) {
         let admin = read_admin(&e);
         admin.require_auth();
 
-        write_amount(&e, amount);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let id = read_supply(&e);
+        let to = e.current_contract_address();
+        write_amount(&e, id, amount);
         write_metadata(
             &e,
+            id,
             HashMetadata {
                 po_hash,
                 invoice_hash,
                 bol_hash,
             },
         );
+        write_owner(&e, id, to);
+        increment_supply(&e);
 
-        // TODO: emit 'minted' event
+        event::mint(&e, to, id);
+    }
+
+    fn transfer(e: Env, from: Address, to: Address, id: i128) {
+        from.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &from, id);
+
+        write_owner(&e, id, to);
+        event::transfer(&e, from, to, id);
+    }
+
+    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, id: i128) {
+        spender.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &from, id);
+
+        if read_approval_all(&e, from.clone(), spender.clone()) || spender == read_approval(&e, id)
+        {
+            write_approval(&e, id, None);
+
+            write_owner(&e, id, to);
+
+            event::transfer(&e, from, to, id);
+        } else {
+            panic_with_error!(&e, Error::NotAuthorized)
+        }
+    }
+
+    fn appr(e: Env, owner: Address, operator: Address, id: i128) {
+        owner.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &owner, id);
+
+        write_approval(&e, id, Some(operator.clone()));
+        event::approve(&e, operator, id);
+    }
+
+    fn appr_all(e: Env, owner: Address, operator: Address, approved: bool) {
+        owner.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        write_approval_all(&e, owner.clone(), operator.clone(), approved);
+        event::approve_all(&e, operator, owner)
+    }
+
+    fn get_appr(e: Env, id: i128) -> Address {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_approval(&e, id)
+    }
+
+    fn is_appr(e: Env, owner: Address, operator: Address) -> bool {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_approval_all(&e, owner, operator)
     }
 }
