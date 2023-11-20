@@ -8,11 +8,11 @@ use crate::{
     event,
     ext_token::write_ext_token,
     interface::TokenizedCertificateTrait,
-    owner::{check_owner, write_owner},
+    owner::{check_owner, read_owner, write_owner},
     storage_types::{
         ExtTokenInfo, HashMetadata, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD,
     },
-    token_data::{write_amount, write_metadata},
+    token_data::{read_amount, read_metadata, write_amount, write_metadata},
 };
 
 #[contract]
@@ -137,5 +137,26 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval_all(&e, owner, operator)
+    }
+
+    fn get_amount(e: Env, id: i128) -> u32 {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_amount(&e, id)
+    }
+
+    fn get_owner(e: Env, id: i128) -> Address {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_owner(&e, id)
+    }
+
+    fn get_metadata(e: Env, id: i128) -> HashMetadata {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_metadata(&e, id)
     }
 }
