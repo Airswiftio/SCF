@@ -3,6 +3,7 @@ use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 
 use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, token::StellarAssetClient, vec, Address,
     Env, String,
@@ -17,10 +18,8 @@ fn test_initialize() {
     let admin = Address::random(&env);
     let invoice_num = 12345678;
     let po_num = 1;
+    let buyer = Address::random(&env);
     let total_amount: u32 = 1000000;
-    let checksum = String::from_slice(&env, "1f1e33");
-    let supplier_name = String::from_slice(&env, "L1 Supplier");
-    let buyer_name = String::from_slice(&env, "Buyer Company");
     let start_time = 1640995200; // 2022-01-01 00:00:00 UTC+0
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
 
@@ -28,10 +27,8 @@ fn test_initialize() {
         &admin,
         &invoice_num,
         &po_num,
+        &buyer,
         &total_amount,
-        &checksum,
-        &supplier_name,
-        &buyer_name,
         &start_time,
         &end_time,
     );
@@ -44,14 +41,16 @@ fn test_mint_original() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(to, client.owner(&0));
     assert_eq!(1000000, client.amount(&0));
     assert_eq!(0, client.parent(&0));
     assert_eq!(false, client.is_disabled(&0));
+    assert_eq!(String::from_slice(&env, "a"), client.data(&0));
 }
 
 #[test]
@@ -60,13 +59,14 @@ fn test_mint_original_twice() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
-    client.mint_original(&to); // should panic
+    client.mint_original(&to, &String::from_slice(&env, "a")); // should panic
 }
 
 #[test]
@@ -74,10 +74,11 @@ fn test_split() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -87,10 +88,12 @@ fn test_split() {
             SplitRequest {
                 amount: 300000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -98,14 +101,17 @@ fn test_split() {
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
+    assert_eq!(String::from_slice(&env, "b"), client.data(&1));
 
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
+    assert_eq!(String::from_slice(&env, "c"), client.data(&2));
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
     assert_eq!(0, client.parent(&3));
+    assert_eq!(String::from_slice(&env, "a"), client.data(&3));
 
     assert_eq!(true, client.is_disabled(&0));
 }
@@ -115,10 +121,11 @@ fn test_split_nested() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -128,10 +135,13 @@ fn test_split_nested() {
             SplitRequest {
                 amount: 800000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
         ],
     );
     assert_eq!(800000, client.amount(&1));
+    assert_eq!(String::from_slice(&env, "b"), client.data(&1));
+
     // remaining token id 2 is worth 200k and belongs to buyer
 
     client.split(
@@ -141,16 +151,19 @@ fn test_split_nested() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );
     assert_eq!(500000, client.amount(&3));
     assert_eq!(client.address, client.owner(&3));
     assert_eq!(1, client.parent(&3));
+    assert_eq!(String::from_slice(&env, "c"), client.data(&3));
 
     assert_eq!(300000, client.amount(&4));
     assert_eq!(client.address, client.owner(&4));
     assert_eq!(1, client.parent(&4));
+    assert_eq!(String::from_slice(&env, "b"), client.data(&4));
 }
 
 #[test]
@@ -159,10 +172,11 @@ fn test_split_twice() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     client.split(
         &0,
         &vec![
@@ -170,6 +184,7 @@ fn test_split_twice() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
         ],
     );
@@ -180,6 +195,7 @@ fn test_split_twice() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -191,10 +207,11 @@ fn test_split_exceed() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -204,10 +221,12 @@ fn test_split_exceed() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 500001,
                 to: to.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -219,10 +238,11 @@ fn test_split_empty() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     client.split(&0, &vec![&env]);
 }
 
@@ -231,11 +251,12 @@ fn test_transfer() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let acc1 = Address::random(&env);
     let acc2 = Address::random(&env);
-    client.mint_original(&acc1);
+    client.mint_original(&acc1, &String::from_slice(&env, "a"));
     assert_eq!(acc1, client.owner(&0));
 
     client.transfer(&acc1, &acc2, &0);
@@ -247,9 +268,10 @@ fn test_burn() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
-    client.mint_original(&admin);
+    client.mint_original(&admin, &String::from_slice(&env, "a"));
     let res = client.try_owner(&0);
     assert_eq!(res.is_ok(), true);
 
@@ -263,48 +285,45 @@ fn test_pay_off() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
-    let user = Address::random(&env);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&user, &10000000000000);
+    ext_admin.mint(&buyer, &10000000000000);
 
     client.set_external_token_provider(&ext_token_addr, &7);
     assert_eq!(client.check_paid(), false);
 
-    client.pay_off(&user);
+    client.pay_off(&buyer);
     assert_eq!(client.check_paid(), true);
 }
 
 #[test]
 fn test_check_expired() {
-    let mut snapshot = Env::default().to_snapshot();
-    snapshot.timestamp = 1640995200; // 2022-01-01 00:00:00 UTC+0
-    let env = Env::from_snapshot(snapshot.clone());
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1640995200); // 2022-01-01 00:00:00 UTC+0
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     assert_eq!(client.check_expired(), false);
 
-    let mut snapshot2 = Env::default().to_snapshot();
-    snapshot2.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
-    let env2 = Env::from_snapshot(snapshot2.clone());
-    let client2 = setup_test_token(&env2, &admin);
-    assert_eq!(client2.check_expired(), true);
+    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
+    assert_eq!(client.check_expired(), true);
 }
 
 #[test]
 fn test_expire_auto_transfer() {
-    let mut snapshot = Env::default().to_snapshot();
-    snapshot.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
-    let env = Env::from_snapshot(snapshot.clone());
+    let env = Env::default();
+    env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     client.split(
@@ -314,11 +333,13 @@ fn test_expire_auto_transfer() {
             SplitRequest {
                 amount: 600000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
         ],
     );
     assert_eq!(client.address, client.owner(&1));
 
+    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
     assert_eq!(client.check_expired(), true);
     assert_eq!(to, client.owner(&1));
 }
@@ -326,14 +347,13 @@ fn test_expire_auto_transfer() {
 #[test]
 fn test_redeem() {
     // setup env with specific timestamp
-    let mut snapshot = Env::default().to_snapshot();
-    snapshot.timestamp = 1672617600; // 2023-01-02 00:00:00 UTC +0
-    let env = Env::from_snapshot(snapshot.clone());
+    let env = Env::default();
+    env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token and pay the contract
-    let buyer = Address::random(&env);
     let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&buyer, &10000000000000);
@@ -341,7 +361,7 @@ fn test_redeem() {
     ext_client.mock_all_auths_allowing_non_root_auth();
 
     let supplier = Address::random(&env);
-    client.mint_original(&supplier);
+    client.mint_original(&supplier, &String::from_slice(&env, "a"));
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
@@ -349,6 +369,7 @@ fn test_redeem() {
     assert_eq!(client.try_redeem(&0).is_err(), true);
     client.check_paid();
     assert_eq!(client.try_redeem(&0).is_err(), true);
+    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
     client.check_expired();
 
     assert_eq!(ext_client.balance(&supplier), 0);
@@ -368,15 +389,17 @@ fn test_sign_off() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     let split_req = SplitRequest {
         amount: 600000,
         to: to.clone(),
+        data: String::from_slice(&env, "b"),
     };
     client.split(&0, &vec![&env, split_req.clone()]);
     assert_eq!(client.address, client.owner(&1));
@@ -390,12 +413,13 @@ fn test_get_all_owned() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::random(&env);
-    let client = setup_test_token(&env, &admin);
+    let buyer = Address::random(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
     assert_eq!(vec![&env], client.get_all_owned(&to));
 
-    client.mint_original(&to);
+    client.mint_original(&to, &String::from_slice(&env, "a"));
 
     assert_eq!(vec![&env, 0], client.get_all_owned(&to));
 
@@ -406,10 +430,12 @@ fn test_get_all_owned() {
             SplitRequest {
                 amount: 100000,
                 to: to.clone(),
+                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 200000,
                 to: to.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );

@@ -5,7 +5,7 @@ use crate::errors::Error;
 use crate::event;
 use crate::interface::NonFungibleTokenTrait;
 use crate::metadata::{read_external_token, write_external_token};
-use crate::order_info::{read_total_amount, write_order_info};
+use crate::order_info::{read_buyer_address, read_total_amount, write_order_info};
 use crate::order_state::{read_paid, update_and_read_expired, write_paid};
 use crate::owner::{
     check_owner, read_all_owned, read_owner, read_recipient, write_owner, write_recipient,
@@ -24,10 +24,8 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         admin: Address,
         invoice_num: i128,
         po_num: i128,
+        buyer_address: Address,
         total_amount: u32,
-        checksum: String,
-        supplier_name: String,
-        buyer_name: String,
         start_time: u64,
         end_time: u64,
     ) {
@@ -42,10 +40,8 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             &e,
             invoice_num,
             po_num,
+            buyer_address,
             total_amount,
-            checksum,
-            supplier_name,
-            buyer_name,
             start_time,
             end_time,
         );
@@ -104,11 +100,17 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     }
 
     fn amount(env: Env, id: i128) -> u32 {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_nft = read_sub_nft(&env, id);
         sub_nft.amount
     }
 
     fn parent(env: Env, id: i128) -> i128 {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_nft = read_sub_nft(&env, id);
         sub_nft.root
     }
@@ -121,6 +123,14 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         read_owner(&env, id)
     }
 
+    fn data(env: Env, id: i128) -> String {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let sub_nft = read_sub_nft(&env, id);
+        sub_nft.data
+    }
+
     fn get_all_owned(env: Env, address: Address) -> Vec<i128> {
         env.storage()
             .instance()
@@ -130,6 +140,9 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     }
 
     fn is_disabled(env: Env, id: i128) -> bool {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_sub_nft_disabled(&env, id)
     }
 
@@ -165,7 +178,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         }
     }
 
-    fn mint_original(env: Env, to: Address) {
+    fn mint_original(env: Env, to: Address, data: String) {
         env.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -178,7 +191,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         }
         let amount = read_total_amount(&env);
         write_owner(&env, id, Some(to.clone()));
-        write_sub_nft(&env, id, id, amount);
+        write_sub_nft(&env, id, id, amount, data);
         write_sub_nft_disabled(&env, id, false);
         increment_supply(&env);
 
@@ -230,7 +243,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let mut new_ids = Vec::new(&env);
         for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_nft(&env, new_id, id, req.amount);
+            write_sub_nft(&env, new_id, id, req.amount, req.data);
             write_sub_nft_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
@@ -242,7 +255,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         // if root amount > 0, create another sub nft to represent the remaining amount belonging to original owner
         if remaining > 0 {
             let new_id = read_supply(&env);
-            write_sub_nft(&env, new_id, id, remaining);
+            write_sub_nft(&env, new_id, id, remaining, root.data);
             write_sub_nft_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(owner.clone()));
             increment_supply(&env);
@@ -347,6 +360,9 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let base_amount = read_total_amount(&env);
         let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
 
+        if from != read_buyer_address(&env) {
+            panic_with_error!(&env, Error::NotAuthorized);
+        }
         from.require_auth();
         client.transfer(&from, &env.current_contract_address(), &i128::from(amount));
         write_paid(&env, true);

@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address};
+use soroban_sdk::{contracttype, Address, String};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 7 * DAY_IN_LEDGERS;
@@ -29,7 +29,6 @@ pub enum DataKey {
     Admin,
     Name,
     Symbol,
-    URI(i128),
     Approval(ApprovalKey),
     Owner(i128),
     Disabled(i128),
@@ -47,6 +46,7 @@ pub enum DataKey {
 pub struct SubNFT {
     pub root: i128,
     pub amount: u32,
+    pub data: String,
 }
 
 #[contracttype]
@@ -54,6 +54,7 @@ pub struct SubNFT {
 pub struct SplitRequest {
     pub amount: u32,
     pub to: Address,
+    pub data: String,
 }
 
 #[contracttype]

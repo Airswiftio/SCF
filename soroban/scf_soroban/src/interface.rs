@@ -41,6 +41,9 @@ pub trait NonFungibleTokenTrait {
     /// Get the owner of "id" token.
     fn owner(env: Env, id: i128) -> Address;
 
+    /// Get the data associated with "id".
+    fn data(env: Env, id: i128) -> String;
+
     /// Get all NFTs ids owned by address
     fn get_all_owned(env: Env, address: Address) -> Vec<i128>;
 
@@ -55,11 +58,8 @@ pub trait NonFungibleTokenTrait {
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
     fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128);
 
-    /// If authorized as the administrator, mint token "id" with URI "uri".
-    /// Emit event with topics = ["mint", to: Address], data = [uri: String]
-    //fn mint(env: Env, to: Address, uri: String);
-
-    fn mint_original(env: Env, to: Address);
+    /// Mint the root-level NFT. Will fail if the root-level NFT already exists.
+    fn mint_original(env: Env, to: Address, data: String);
 
     /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
     fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128>;
@@ -100,10 +100,8 @@ pub trait NonFungibleTokenTrait {
         admin: Address,
         invoice_num: i128,
         po_num: i128,
+        buyer_address: Address,
         total_amount: u32,
-        checksum: String,
-        supplier_name: String,
-        buyer_name: String,
         start_time: u64,
         end_time: u64,
     );
