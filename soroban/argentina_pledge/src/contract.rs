@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, panic_with_error, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String};
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
@@ -6,7 +6,7 @@ use crate::{
     balance::{increment_supply, read_supply},
     errors::Error,
     event,
-    ext_token::write_ext_token,
+    ext_token::{read_ext_token, write_ext_token},
     interface::TokenizedCertificateTrait,
     owner::{check_owner, read_owner, write_owner},
     storage_types::{
@@ -69,7 +69,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
                 bol_hash,
             },
         );
-        write_owner(&e, id, to);
+        write_owner(&e, id, Some(to.clone()));
         increment_supply(&e);
 
         event::mint(&e, to, id);
@@ -82,7 +82,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &from, id);
 
-        write_owner(&e, id, to);
+        write_owner(&e, id, Some(to.clone()));
         event::transfer(&e, from, to, id);
     }
 
@@ -97,7 +97,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         {
             write_approval(&e, id, None);
 
-            write_owner(&e, id, to);
+            write_owner(&e, id, Some(to.clone()));
 
             event::transfer(&e, from, to, id);
         } else {
@@ -137,6 +137,44 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval_all(&e, owner, operator)
+    }
+
+    fn pledge(e: Env, from: Address, id: i128) {
+        from.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &e.current_contract_address(), id);
+
+        // Transfer USDC from "from" to the contract address
+        let ext_token = read_ext_token(&e);
+        let client = token::Client::new(&e, &ext_token.address);
+        let base_amount = read_amount(&e, id);
+        let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
+        client.transfer(&from, &e.current_contract_address(), &i128::from(amount));
+
+        // Transfer TC from the contract address to "from"
+        write_owner(&e, id, Some(from.clone()));
+        event::transfer(&e, e.current_contract_address(), from, id);
+    }
+
+    fn redeem(e: Env, to: Address, id: i128) {
+        to.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &to, id);
+
+        // Transfer USDC from the contract address to "to"
+        let ext_token = read_ext_token(&e);
+        let client = token::Client::new(&e, &ext_token.address);
+        let base_amount = read_amount(&e, id);
+        let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
+        client.transfer(&e.current_contract_address(), &to, &i128::from(amount));
+
+        // Burn TC
+        write_owner(&e, id, None);
+        event::burn(&e, to, id);
     }
 
     fn get_amount(e: Env, id: i128) -> u32 {

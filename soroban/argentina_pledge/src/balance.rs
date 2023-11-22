@@ -1,4 +1,4 @@
-use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
+use crate::storage_types::DataKey;
 use soroban_sdk::Env;
 
 pub fn read_supply(e: &Env) -> i128 {
