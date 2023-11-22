@@ -323,6 +323,8 @@ fn test_expire_auto_transfer() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::random(&env);
+    let to2 = Address::random(&env);
+    let to3 = Address::random(&env);
     client.mint_original(&to, &String::from_slice(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
@@ -331,17 +333,46 @@ fn test_expire_auto_transfer() {
         &vec![
             &env,
             SplitRequest {
-                amount: 600000,
-                to: to.clone(),
+                amount: 500000,
+                to: to2.clone(),
                 data: String::from_slice(&env, "b"),
+            },
+            SplitRequest {
+                amount: 100000,
+                to: to2.clone(),
+                data: String::from_slice(&env, "c"),
             },
         ],
     );
-    assert_eq!(client.address, client.owner(&1));
+    client.sign_off(&1);
+    client.split(
+        &1,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 200000,
+                to: to3.clone(),
+                data: String::from_slice(&env, "d"),
+            },
+            SplitRequest {
+                amount: 50000,
+                to: to3.clone(),
+                data: String::from_slice(&env, "e"),
+            },
+        ],
+    );
+    client.sign_off(&4);
+    assert_eq!(to2, client.owner(&1));
+    assert_eq!(client.address, client.owner(&2));
+    assert_eq!(to, client.owner(&3));
+    assert_eq!(to3, client.owner(&4));
+    assert_eq!(client.address, client.owner(&5));
+    assert_eq!(to2, client.owner(&6));
 
     env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
     assert_eq!(client.check_expired(), true);
-    assert_eq!(to, client.owner(&1));
+    assert_eq!(to, client.owner(&2));
+    assert_eq!(to2, client.owner(&5));
 }
 
 #[test]
