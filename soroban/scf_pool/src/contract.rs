@@ -1,12 +1,10 @@
-//! This contract demonstrates a sample implementation of the Soroban token
-//! interface.
 use crate::admin::{
     get_token, has_administrator, read_administrator, write_administrator, write_token,
 };
 use crate::error::Error;
 use crate::offer::{change_offer, check_offer, read_offer, write_offer};
-use crate::storage_types::Offer;
-use soroban_sdk::{contract, contracterror, contractimpl, token, Address, Bytes, BytesN, Env, Val};
+use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
+use soroban_sdk::{contract, contractimpl, token, Address, Env};
 
 mod nft {
     soroban_sdk::contractimport!(
@@ -24,7 +22,7 @@ pub trait OfferPoolTrait {
         nft_contract: Address,
         nft_id: i128,
     ) -> Result<bool, Error>;
-    fn expire_offer(e: Env, offer_id: i128) -> Result<bool, Error>;
+    fn expire_offer(e: Env, from: Address, offer_id: i128) -> Result<bool, Error>;
     fn get_offer(e: Env, offer_id: i128) -> Result<Offer, Error>;
     fn accept_offer(e: Env, token: Address, offer_id: i128) -> Result<bool, Error>;
 
@@ -46,6 +44,7 @@ impl OfferPoolTrait for OfferPool {
         }
     }
 
+    /// Creates an offer pointing to a specific NFT.
     fn create_offer(
         e: Env,
         from: Address,
@@ -57,6 +56,10 @@ impl OfferPoolTrait for OfferPool {
         if check_offer(&e, offer_id) {
             Err(Error::OfferExist)
         } else {
+            e.storage()
+                .instance()
+                .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            // Transfer the offer amount to the contract address until the offer is accepted or expired.
             let token_client = token::Client::new(&e, &get_token(&e));
             from.require_auth();
             token_client.transfer(&from, &e.current_contract_address(), &amount);
@@ -65,45 +68,57 @@ impl OfferPoolTrait for OfferPool {
         }
     }
 
-    fn expire_offer(e: Env, offer_id: i128) -> Result<bool, Error> {
+    // Cancels an offer and returns the offered amount to the owner. Callable by the admin or offer owner.
+    fn expire_offer(e: Env, from: Address, offer_id: i128) -> Result<bool, Error> {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
-            // The division was valid
             Some(x) => {
-                if (x.status != 0) {
+                if x.status != 0 {
                     return Err(Error::OfferChanged);
                 }
+                // check that 'from' matches either the admin or the offer owner
+                let admin = read_administrator(&e);
+                let offer_from = x.from;
+                if (from != admin) && (from != offer_from) {
+                    return Err(Error::NotAuthorized);
+                }
 
-                let from = x.from;
+                // transfer the offer amount from the contract address back to the offer owner
+                from.require_auth();
                 let amount = x.amount;
-
                 let token_client = token::Client::new(&e, &get_token(&e));
 
-                token_client.transfer(&e.current_contract_address(), &from, &amount);
+                token_client.transfer(&e.current_contract_address(), &offer_from, &amount);
                 change_offer(&e, offer_id, 1);
                 Ok(true)
             }
-            // The division was invalid
-            None => return Err(Error::OfferEmpyt),
+            None => return Err(Error::OfferEmpty),
         }
     }
 
     fn get_offer(e: Env, offer_id: i128) -> Result<Offer, Error> {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
-            // The division was valid
             Some(x) => Ok(x),
-            // The division was invalid
-            None => Err(Error::OfferEmpyt),
+            None => Err(Error::OfferEmpty),
         }
     }
 
+    // On accepting an offer, the offered amount in tokens is transferred from to contract address to 'to' and the NFT is transferred to the offer creator.
     fn accept_offer(e: Env, to: Address, offer_id: i128) -> Result<bool, Error> {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
-            // The division was valid
             Some(x) => {
-                if (x.status != 0) {
+                if x.status != 0 {
                     return Err(Error::OfferChanged);
                 }
                 let from = x.from;
@@ -122,8 +137,7 @@ impl OfferPoolTrait for OfferPool {
                 change_offer(&e, offer_id, 2);
                 Ok(true)
             }
-            // The division was invalid
-            None => return Err(Error::OfferEmpyt),
+            None => return Err(Error::OfferEmpty),
         }
     }
 }

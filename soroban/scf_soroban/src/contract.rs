@@ -277,9 +277,6 @@ impl NonFungibleTokenTrait for NonFungibleToken {
             panic_with_error!(&env, Error::NotPermitted);
         }
 
-        env.storage()
-            .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let owner = read_owner(&env, id);
         owner.require_auth();
 
