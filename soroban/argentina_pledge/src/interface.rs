@@ -19,7 +19,7 @@ pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
 
     /// Admin calls this function. Minted TC belongs to contract.
-    /// Emit event with topics = ["mint", to: Address], data = [uri: String]
+    /// Emit event with topics = ["mint", to: Address], data = [id: i128]
     fn mint(e: Env, amount: u32, po_hash: String, invoice_hash: String, bol_hash: String);
 
     /// Transfer token 'id' between specified 'from' and 'to' addresses
@@ -58,4 +58,7 @@ pub trait TokenizedCertificateTrait {
 
     /// Returns the invoice, PO, and BOL hashes of a given TC
     fn get_metadata(e: Env, id: i128) -> HashMetadata;
+
+    /// Returns the address and decimals of the ext_token
+    fn get_ext_token(e: Env) -> (Address, u32);
 }

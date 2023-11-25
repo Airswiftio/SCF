@@ -14,6 +14,7 @@ pub struct ExtTokenInfo {
     pub decimals: u32,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[contracttype]
 pub struct HashMetadata {
     pub po_hash: String,

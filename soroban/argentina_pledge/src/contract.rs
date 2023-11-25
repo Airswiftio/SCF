@@ -197,4 +197,12 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_metadata(&e, id)
     }
+
+    fn get_ext_token(e: Env) -> (Address, u32) {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let ext_token = read_ext_token(&e);
+        (ext_token.address, ext_token.decimals)
+    }
 }
