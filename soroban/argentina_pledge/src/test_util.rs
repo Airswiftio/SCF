@@ -1,7 +1,7 @@
 #![cfg(any(test, feature = "testutils"))]
 
 use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
-use soroban_sdk::{token, Address, Env};
+use soroban_sdk::{testutils::Ledger, token, Address, Env};
 
 pub fn setup_test_tc_contract<'a>(
     e: &Env,
@@ -25,4 +25,8 @@ pub fn setup_test_token<'a>(
         token::Client::new(e, &addr),
         token::StellarAssetClient::new(e, &addr),
     )
+}
+
+pub fn set_ledger_timestamp(e: &Env, timestamp: u64) {
+    e.ledger().with_mut(|li| li.timestamp = timestamp);
 }

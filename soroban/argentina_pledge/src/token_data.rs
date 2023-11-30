@@ -45,3 +45,24 @@ pub fn read_metadata(e: &Env, id: i128) -> HashMetadata {
         None => panic_with_error!(&e, Error::NotFound),
     }
 }
+
+pub fn write_redeem_time(e: &Env, id: i128, redeem_time: u64) {
+    let key = DataKey::RedeemTime(id);
+    e.storage().persistent().set(&key, &redeem_time);
+    e.storage()
+        .persistent()
+        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+}
+
+pub fn read_redeem_time(e: &Env, id: i128) -> u64 {
+    let key = DataKey::RedeemTime(id);
+    match e.storage().persistent().get(&key) {
+        Some(redeem_time) => {
+            e.storage()
+                .persistent()
+                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            redeem_time
+        }
+        None => panic_with_error!(&e, Error::NotFound),
+    }
+}

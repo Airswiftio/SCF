@@ -44,6 +44,7 @@ pub enum DataKey {
     Supply,
     Metadata(i128),
     Amount(i128),
+    RedeemTime(i128),
     Owner(i128),
     Approval(ApprovalKey),
 }

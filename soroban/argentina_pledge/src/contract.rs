@@ -12,7 +12,10 @@ use crate::{
     storage_types::{
         ExtTokenInfo, HashMetadata, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD,
     },
-    token_data::{read_amount, read_metadata, write_amount, write_metadata},
+    token_data::{
+        read_amount, read_metadata, read_redeem_time, write_amount, write_metadata,
+        write_redeem_time,
+    },
 };
 
 #[contract]
@@ -49,7 +52,14 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&e, admin, new_admin)
     }
 
-    fn mint(e: Env, amount: u32, po_hash: String, invoice_hash: String, bol_hash: String) {
+    fn mint(
+        e: Env,
+        amount: u32,
+        redeem_time: u64,
+        po_hash: String,
+        invoice_hash: String,
+        bol_hash: String,
+    ) {
         let admin = read_admin(&e);
         admin.require_auth();
 
@@ -60,6 +70,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let id = read_supply(&e);
         let to = e.current_contract_address();
         write_amount(&e, id, amount);
+        write_redeem_time(&e, id, redeem_time);
         write_metadata(
             &e,
             id,
@@ -164,6 +175,11 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &to, id);
+        let redeem_time = read_redeem_time(&e, id);
+        let ts = e.ledger().timestamp();
+        if e.ledger().timestamp() < read_redeem_time(&e, id) {
+            panic_with_error!(&e, Error::NotRedeemable);
+        }
 
         // Transfer USDC from the contract address to "to"
         let ext_token = read_ext_token(&e);
@@ -204,5 +220,12 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let ext_token = read_ext_token(&e);
         (ext_token.address, ext_token.decimals)
+    }
+
+    fn get_redeem_time(e: Env, id: i128) -> u64 {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_redeem_time(&e, id)
     }
 }
