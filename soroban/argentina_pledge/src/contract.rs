@@ -175,8 +175,6 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &to, id);
-        let redeem_time = read_redeem_time(&e, id);
-        let ts = e.ledger().timestamp();
         if e.ledger().timestamp() < read_redeem_time(&e, id) {
             panic_with_error!(&e, Error::NotRedeemable);
         }

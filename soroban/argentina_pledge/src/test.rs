@@ -317,11 +317,11 @@ fn test_redeem() {
     );
 
     let user = Address::random(&e);
-    token_admin_client.mint(&user.clone(), &10000000);
-    tc_client.pledge(&user.clone(), &0);
+    token_admin_client.mint(&user, &10000000);
+    tc_client.pledge(&user, &0);
 
     let user2 = Address::random(&e);
-    tc_client.transfer(&user.clone(), &user2.clone(), &0);
+    tc_client.transfer(&user, &user2, &0);
     assert_eq!(tc_client.get_owner(&0), user2);
 
     set_ledger_timestamp(&e, 1641024001);

@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, String};
+use soroban_sdk::{Address, BytesN, Env, String};
 
 pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
@@ -15,7 +15,7 @@ pub trait LiquidityPoolTrait {
         token_wasm_hash: BytesN<32>,
         ext_token_address: Address,
         ext_token_decimals: u32,
-        rate: u32,
+        rate_percent: u32,
     );
 
     /// If "admin" is the administrator, set the administrator to "new_admin".
@@ -31,12 +31,12 @@ pub trait LiquidityPoolTrait {
 
     /// Deposit USDC into the contract in exchange for a corresponding number of liquidity tokens minted to the "from" address.
     /// Emit event with topics = ["deposit", from: Address], data = [amount: u32]
-    fn deposit(e: Env, from: Address, amount: u32);
+    fn deposit(e: Env, from: Address, amount: i128);
 
     /// Withdraw USDC from the contract in exchange for a corresponding number of liquidity tokens burned from the "from" address.
     /// Emit event with topics = ["withdraw", from: Address], data = [amount: u32]
-    fn withdraw(e: Env, from: Address, amount: u32);
-
+    fn withdraw(e: Env, from: Address, amount: i128);
+    /*
     /// Create a loan request for a number of liquidity tokens, using a TC as collateral. Caller must be the owner or approved for the TC.
     /// Emit event with topics = ["create_loan_request", from: Address], data = [contract_addr: Address, id: i128]
     fn create_loan_request(e: Env, from: Address, contract_addr: Address, id: i128);
@@ -68,4 +68,5 @@ pub trait LiquidityPoolTrait {
 
     /// Get the contract address and decimals of the USDC contract.
     fn get_ext_token(e: Env) -> (Address, u32);
+    */
 }
