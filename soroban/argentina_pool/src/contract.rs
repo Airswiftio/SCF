@@ -1,12 +1,16 @@
 use crate::{
     admin::{has_admin, read_admin, write_admin},
+    errors::Error,
     ext_token::{read_ext_token, write_ext_token},
     interface::LiquidityPoolTrait,
-    loan::write_rate_percent,
+    loan::{has_loan, write_loan, write_rate_percent, Loan, LoanStatus},
     pool_token::{create_contract, read_pool_token, write_pool_token},
     storage_types::{TokenInfo, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
 };
-use soroban_sdk::{contract, contractimpl, token, vec, Address, BytesN, Env, IntoVal, Symbol, Val};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Symbol,
+    Val,
+};
 
 #[contract]
 pub struct LiquidityPool;
@@ -107,8 +111,32 @@ impl LiquidityPoolTrait for LiquidityPool {
         token::Client::new(&e, &read_pool_token(&e).address).burn(&from, &amount);
 
         // Transfer USDC from the contract address to "from"
-        let ext_token = read_ext_token(&e);
-        let client = token::Client::new(&e, &ext_token.address);
-        client.transfer(&e.current_contract_address(), &from, &amount);
+        token::Client::new(&e, &read_ext_token(&e).address).transfer(
+            &e.current_contract_address(),
+            &from,
+            &amount,
+        );
+    }
+
+    fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_address: Address, tc_id: i128) {
+        from.require_auth();
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        if has_loan(&e, offer_id) {
+            panic_with_error!(&e, Error::NotEmpty);
+        }
+        let request = Loan {
+            id: offer_id,
+            borrower: from.clone(),
+            creditor: from.clone(),
+            amount: 0,
+            tc_address,
+            tc_id,
+            status: LoanStatus::Pending,
+        };
+
+        write_loan(&e, request);
     }
 }

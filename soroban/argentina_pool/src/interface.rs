@@ -36,26 +36,27 @@ pub trait LiquidityPoolTrait {
     /// Withdraw USDC from the contract in exchange for a corresponding number of liquidity tokens burned from the "from" address.
     /// Emit event with topics = ["withdraw", from: Address], data = [amount: u32]
     fn withdraw(e: Env, from: Address, amount: i128);
+
+    /// Create a loan offer against a TC. Upon accepting, the caller (borrower) transfers liquidity tokens to the smart contract equal to the value of the TC.
+    fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_addr: Address, tc_id: i128);
     /*
-    /// Create a loan request for a number of liquidity tokens, using a TC as collateral. Caller must be the owner or approved for the TC.
-    /// Emit event with topics = ["create_loan_request", from: Address], data = [contract_addr: Address, id: i128]
-    fn create_loan_request(e: Env, from: Address, contract_addr: Address, id: i128);
+    /// Cancel a loan offer. Caller must be the user who created the request.
+    fn cancel_loan_offer(e: Env, from: Address, offer_id: i128);
 
-    /// Cancel a loan request. Caller must be the user who created the request.
-    /// Emit event with topics = ["cancel_loan_request", from: Address], data = [offer_id: i128]
-    fn cancel_loan_request(e: Env, from: Address, offer_id: i128);
+    /// Accept a loan offer. The caller (creditor) must own the TC or have approval to transfer it.
+    /// Transfers the TC to the smart contract, and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller.
+    fn accept_loan_offer(e: Env, from: Address, offer_id: i128);
 
-    /// Accept a loan request. Upon accepting, the caller transfers liquidity tokens to the borrower equal to the associated TC's value, and the request owner transfers the TC to the caller.
-    /// Emit event with topics = ["accept_loan_request", from: Address], data = [offer_id: i128]
-    fn accept_loan_request(e: Env, from: Address, offer_id: i128);
-
-    /// Close a loan by returning liquidity tokens to the loaner, and returning the TC to the caller.
-    /// If the pool's rate is greater than 0, the amount of liquidity tokens required is higher than the original amount.
-    /// Emit event with topics = ["payoff_loan", from: Address], data = [offer_id: i128]
-    fn payoff_loan(e: Env, from: Address, offer_id: i128);
+    /// Close a loan by returning liquidity tokens from the borrower to the loan creditor,
+    /// and returning the TC to the creditor to the borrower.
+    /// If the pool's rate is greater than 0, the amount of liquidity tokens required to close is higher than the original amount.
+    fn close_loan(e: Env, from: Address, offer_id: i128);
 
     /// Get the rate associated with a loan.
-    fn get_rate(e: Env, offer_id: i128) -> u32;
+    fn get_loan_rate(e: Env, offer_id: i128) -> u32;
+
+    /// Get the liquidity pool's current rate.
+    fn get_pool_rate(e: Env) -> u32;
 
     /// Get the contract address and TC id associated with a loan.
     fn get_tc(e: Env, offer_id: i128) -> (Address, i128);

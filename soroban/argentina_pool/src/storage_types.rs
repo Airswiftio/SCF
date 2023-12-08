@@ -25,4 +25,5 @@ pub enum DataKey {
     RedeemTime(i128),
     Owner(i128),
     RatePercent,
+    Loan(i128),
 }
