@@ -38,6 +38,7 @@ pub trait LiquidityPoolTrait {
     fn withdraw(e: Env, from: Address, amount: i128);
 
     /// Create a loan offer against a TC. The caller (creditor) transfers liquidity tokens to the smart contract equal to the value of the TC.
+    /// The loan will use the liquidity pool's interest rate at the time of the offer being created
     fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_addr: Address, tc_id: i128);
 
     /// Cancel a loan offer. Caller must be the user who created the request (creditor).
@@ -56,7 +57,7 @@ pub trait LiquidityPoolTrait {
     /// Close a loan by returning the TC to the creditor to the borrower, then sending the liquidity tokens from the smart contract back to the creditor.
     /// Payoff must be completed prior to this step.
     fn close_loan(e: Env, from: Address, offer_id: i128);
-    /*
+
     /// Get the rate associated with a loan.
     fn get_loan_rate(e: Env, offer_id: i128) -> u32;
 
@@ -69,6 +70,9 @@ pub trait LiquidityPoolTrait {
     /// Get the borrower associated with a loan.
     fn get_borrower(e: Env, offer_id: i128) -> Address;
 
+    /// Get the creditor associated with a loan.
+    fn get_creditor(e: Env, offer_id: i128) -> Address;
+
     /// Get the contract address of the liquidity pool token.
     fn get_liquidity_token(e: Env) -> Address;
 
@@ -77,5 +81,4 @@ pub trait LiquidityPoolTrait {
 
     /// Get the amount required to successfully pay off the loan.
     fn get_payoff_amount(e: Env, offer_id: i128) -> i128;
-    */
 }

@@ -23,6 +23,7 @@ pub struct Loan {
     pub amount: i128,
     pub tc_address: Address,
     pub tc_id: i128,
+    pub rate_percent: u32,
     pub status: LoanStatus,
 }
 

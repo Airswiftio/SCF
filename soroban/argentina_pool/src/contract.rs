@@ -146,6 +146,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             amount: i128::from(tc_amount),
             tc_address,
             tc_id,
+            rate_percent: read_rate_percent(&e),
             status: LoanStatus::Pending,
         };
 
@@ -221,13 +222,12 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         // transfer liquidity tokens from caller (borrower) to smart contract
         // pool rate is the additional percent rate needed to pay off the loan.
-        let pool_rate = read_rate_percent(&e);
         transfer_scaled(
             &e,
             loan.borrower.clone(),
             e.current_contract_address(),
             loan.amount,
-            pool_rate,
+            loan.rate_percent,
         );
 
         // update loan info
@@ -252,18 +252,87 @@ impl LiquidityPoolTrait for LiquidityPool {
             &loan.tc_id,
         );
         // return funds from smart contract to creditor
-        let pool_rate = read_rate_percent(&e);
         transfer_scaled(
             &e,
             e.current_contract_address(),
             loan.creditor.clone(),
             loan.amount,
-            pool_rate,
+            loan.rate_percent,
         );
 
         // update loan info
         loan.status = LoanStatus::Closed;
         write_loan(&e, loan);
+    }
+
+    fn get_loan_rate(e: Env, offer_id: i128) -> u32 {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        loan.rate_percent
+    }
+
+    fn get_pool_rate(e: Env) -> u32 {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_rate_percent(&e)
+    }
+
+    fn get_tc(e: Env, offer_id: i128) -> (Address, i128) {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        (loan.tc_address, loan.tc_id)
+    }
+
+    fn get_borrower(e: Env, offer_id: i128) -> Address {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        loan.borrower
+    }
+
+    fn get_creditor(e: Env, offer_id: i128) -> Address {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        loan.creditor
+    }
+
+    fn get_liquidity_token(e: Env) -> Address {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_pool_token(&e).address
+    }
+
+    fn get_ext_token(e: Env) -> (Address, u32) {
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let ext_token = read_ext_token(&e);
+        (ext_token.address, ext_token.decimals)
+    }
+
+    fn get_payoff_amount(e: Env, offer_id: i128) -> i128 {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let scaled_amount = calculate_scaled_amount_with_interest(
+            loan.amount,
+            read_pool_token(&e).decimals,
+            loan.rate_percent,
+        );
+        match scaled_amount {
+            Some(scaled_amount) => scaled_amount,
+            None => panic_with_error!(&e, Error::IntegerOverflow),
+        }
     }
 }
 
