@@ -10,7 +10,8 @@ use soroban_sdk::{contracttype, panic_with_error, Address, Env};
 pub enum LoanStatus {
     Pending = 0,
     Active = 1,
-    Closed = 2,
+    Paid = 2,
+    Closed = 3,
 }
 
 #[derive(Clone)]
@@ -28,6 +29,14 @@ pub struct Loan {
 pub fn write_rate_percent(e: &Env, rate_percent: u32) {
     let key = DataKey::RatePercent;
     e.storage().instance().set(&key, &rate_percent);
+}
+
+pub fn read_rate_percent(e: &Env) -> u32 {
+    let key = DataKey::RatePercent;
+    match e.storage().instance().get::<DataKey, u32>(&key) {
+        Some(rate_percent) => rate_percent,
+        None => 0,
+    }
 }
 
 pub fn write_loan(e: &Env, loan: Loan) {

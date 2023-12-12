@@ -9,5 +9,6 @@ pub enum Error {
     NotAuthorized = 3,
     NotPermitted = 4,
     NotOwned = 5,
-    NotRedeemable = 6,
+    InvalidStatus = 6,
+    IntegerOverflow = 7,
 }

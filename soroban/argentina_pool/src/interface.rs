@@ -37,21 +37,26 @@ pub trait LiquidityPoolTrait {
     /// Emit event with topics = ["withdraw", from: Address], data = [amount: u32]
     fn withdraw(e: Env, from: Address, amount: i128);
 
-    /// Create a loan offer against a TC. Upon accepting, the caller (borrower) transfers liquidity tokens to the smart contract equal to the value of the TC.
+    /// Create a loan offer against a TC. The caller (creditor) transfers liquidity tokens to the smart contract equal to the value of the TC.
     fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_addr: Address, tc_id: i128);
-    /*
-    /// Cancel a loan offer. Caller must be the user who created the request.
-    fn cancel_loan_offer(e: Env, from: Address, offer_id: i128);
 
-    /// Accept a loan offer. The caller (creditor) must own the TC or have approval to transfer it.
-    /// Transfers the TC to the smart contract, and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller.
+    /// Cancel a loan offer. Caller must be the user who created the request (creditor).
+    /// Transfers the liquidity tokens back to the caller.
+    fn cancel_loan_offer(e: Env, offer_id: i128);
+
+    /// Accept a loan offer. The caller (borrower) must own the TC or have approval to transfer it.
+    /// Transfers the TC to the creditor, and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller.
     fn accept_loan_offer(e: Env, from: Address, offer_id: i128);
 
-    /// Close a loan by returning liquidity tokens from the borrower to the loan creditor,
-    /// and returning the TC to the creditor to the borrower.
-    /// If the pool's rate is greater than 0, the amount of liquidity tokens required to close is higher than the original amount.
-    fn close_loan(e: Env, from: Address, offer_id: i128);
+    /// Pay off a loan. The caller (borrower) transfers liquidity tokens to the smart contract.
+    /// If the pool's rate is greater than 0, the amount of liquidity tokens required to pay off is higher than the original amount.
+    /// The loan offer must be accepted prior to this step.
+    fn payoff_loan(e: Env, from: Address, offer_id: i128);
 
+    /// Close a loan by returning the TC to the creditor to the borrower, then sending the liquidity tokens from the smart contract back to the creditor.
+    /// Payoff must be completed prior to this step.
+    fn close_loan(e: Env, from: Address, offer_id: i128);
+    /*
     /// Get the rate associated with a loan.
     fn get_loan_rate(e: Env, offer_id: i128) -> u32;
 
@@ -69,5 +74,8 @@ pub trait LiquidityPoolTrait {
 
     /// Get the contract address and decimals of the USDC contract.
     fn get_ext_token(e: Env) -> (Address, u32);
+
+    /// Get the amount required to successfully pay off the loan.
+    fn get_payoff_amount(e: Env, offer_id: i128) -> i128;
     */
 }
