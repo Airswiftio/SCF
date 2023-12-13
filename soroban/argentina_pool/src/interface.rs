@@ -65,13 +65,13 @@ pub trait LiquidityPoolTrait {
     fn get_pool_rate(e: Env) -> u32;
 
     /// Get the contract address and TC id associated with a loan.
-    fn get_tc(e: Env, offer_id: i128) -> (Address, i128);
+    fn get_loan_tc(e: Env, offer_id: i128) -> (Address, i128);
 
     /// Get the borrower associated with a loan.
-    fn get_borrower(e: Env, offer_id: i128) -> Address;
+    fn get_loan_borrower(e: Env, offer_id: i128) -> Address;
 
     /// Get the creditor associated with a loan.
-    fn get_creditor(e: Env, offer_id: i128) -> Address;
+    fn get_loan_creditor(e: Env, offer_id: i128) -> Address;
 
     /// Get the contract address of the liquidity pool token.
     fn get_liquidity_token(e: Env) -> Address;
@@ -81,4 +81,10 @@ pub trait LiquidityPoolTrait {
 
     /// Get the amount required to successfully pay off the loan.
     fn get_payoff_amount(e: Env, offer_id: i128) -> i128;
+
+    /// Get the base amount of the loan
+    fn get_loan_amount(e: Env, offer_id: i128) -> i128;
+
+    /// Get the status of a loan
+    fn get_loan_status(e: Env, offer_id: i128) -> u32;
 }

@@ -280,7 +280,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         read_rate_percent(&e)
     }
 
-    fn get_tc(e: Env, offer_id: i128) -> (Address, i128) {
+    fn get_loan_tc(e: Env, offer_id: i128) -> (Address, i128) {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
@@ -288,7 +288,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         (loan.tc_address, loan.tc_id)
     }
 
-    fn get_borrower(e: Env, offer_id: i128) -> Address {
+    fn get_loan_borrower(e: Env, offer_id: i128) -> Address {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
@@ -296,7 +296,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         loan.borrower
     }
 
-    fn get_creditor(e: Env, offer_id: i128) -> Address {
+    fn get_loan_creditor(e: Env, offer_id: i128) -> Address {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
@@ -333,6 +333,22 @@ impl LiquidityPoolTrait for LiquidityPool {
             Some(scaled_amount) => scaled_amount,
             None => panic_with_error!(&e, Error::IntegerOverflow),
         }
+    }
+
+    fn get_loan_amount(e: Env, offer_id: i128) -> i128 {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        loan.amount
+    }
+
+    fn get_loan_status(e: Env, offer_id: i128) -> u32 {
+        let loan = read_loan(&e, offer_id);
+        e.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        loan.status as u32
     }
 }
 

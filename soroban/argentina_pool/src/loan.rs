@@ -42,17 +42,14 @@ pub fn read_rate_percent(e: &Env) -> u32 {
 
 pub fn write_loan(e: &Env, loan: Loan) {
     let key = DataKey::Loan(loan.id);
+    e.storage().persistent().set(&key, &loan);
     e.storage()
         .persistent()
         .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
-    e.storage().persistent().set(&key, &loan);
 }
 
 pub fn has_loan(e: &Env, offer_id: i128) -> bool {
     let key = DataKey::Loan(offer_id);
-    e.storage()
-        .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
     e.storage().persistent().has(&key)
 }
 
