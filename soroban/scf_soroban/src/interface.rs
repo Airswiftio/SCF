@@ -90,6 +90,9 @@ pub trait NonFungibleTokenTrait {
     /// pay off OrderInfo.amount using token
     fn pay_off(env: Env, from: Address);
 
+    /// Update the 'data' associated with a token. Can only be called by the admin.
+    fn set_nft_data(env: Env, id: i128, data: String);
+
     // --------------------------------------------------------------------------------
     // Implementation Interface
     // --------------------------------------------------------------------------------

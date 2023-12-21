@@ -243,7 +243,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let mut new_ids = Vec::new(&env);
         for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_nft(&env, new_id, id, req.amount, req.data);
+            write_sub_nft(&env, new_id, id, req.amount, String::from_slice(&env, ""));
             write_sub_nft_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
@@ -363,5 +363,16 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         from.require_auth();
         client.transfer(&from, &env.current_contract_address(), &i128::from(amount));
         write_paid(&env, true);
+    }
+
+    fn set_nft_data(env: Env, id: i128, data: String) {
+        env.storage()
+            .instance()
+            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let admin = read_administrator(&env);
+        admin.require_auth();
+
+        let sub_nft = read_sub_nft(&env, id);
+        write_sub_nft(&env, id, sub_nft.root, sub_nft.amount, data);
     }
 }

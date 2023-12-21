@@ -54,7 +54,6 @@ pub struct SubNFT {
 pub struct SplitRequest {
     pub amount: u32,
     pub to: Address,
-    pub data: String,
 }
 
 #[contracttype]
