@@ -88,15 +88,15 @@ fn test_split() {
             SplitRequest {
                 amount: 300000,
                 to: to.clone(),
-                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );
+
+    client.set_nft_data(&1, &String::from_slice(&env, "b"));
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
@@ -106,7 +106,7 @@ fn test_split() {
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
-    assert_eq!(String::from_slice(&env, "c"), client.data(&2));
+    assert_eq!(String::from_slice(&env, ""), client.data(&2));
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
@@ -135,12 +135,10 @@ fn test_split_nested() {
             SplitRequest {
                 amount: 800000,
                 to: to.clone(),
-                data: String::from_slice(&env, "b"),
             },
         ],
     );
     assert_eq!(800000, client.amount(&1));
-    assert_eq!(String::from_slice(&env, "b"), client.data(&1));
 
     // remaining token id 2 is worth 200k and belongs to buyer
 
@@ -151,19 +149,16 @@ fn test_split_nested() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );
     assert_eq!(500000, client.amount(&3));
     assert_eq!(client.address, client.owner(&3));
     assert_eq!(1, client.parent(&3));
-    assert_eq!(String::from_slice(&env, "c"), client.data(&3));
 
     assert_eq!(300000, client.amount(&4));
     assert_eq!(client.address, client.owner(&4));
     assert_eq!(1, client.parent(&4));
-    assert_eq!(String::from_slice(&env, "b"), client.data(&4));
 }
 
 #[test]
@@ -184,7 +179,6 @@ fn test_split_twice() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
-                data: String::from_slice(&env, "b"),
             },
         ],
     );
@@ -195,7 +189,6 @@ fn test_split_twice() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -221,12 +214,10 @@ fn test_split_exceed() {
             SplitRequest {
                 amount: 500000,
                 to: to.clone(),
-                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 500001,
                 to: to.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -335,12 +326,10 @@ fn test_expire_auto_transfer() {
             SplitRequest {
                 amount: 500000,
                 to: to2.clone(),
-                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 100000,
                 to: to2.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );
@@ -352,12 +341,10 @@ fn test_expire_auto_transfer() {
             SplitRequest {
                 amount: 200000,
                 to: to3.clone(),
-                data: String::from_slice(&env, "d"),
             },
             SplitRequest {
                 amount: 50000,
                 to: to3.clone(),
-                data: String::from_slice(&env, "e"),
             },
         ],
     );
@@ -430,7 +417,6 @@ fn test_sign_off() {
     let split_req = SplitRequest {
         amount: 600000,
         to: to.clone(),
-        data: String::from_slice(&env, "b"),
     };
     client.split(&0, &vec![&env, split_req.clone()]);
     assert_eq!(client.address, client.owner(&1));
@@ -461,12 +447,10 @@ fn test_get_all_owned() {
             SplitRequest {
                 amount: 100000,
                 to: to.clone(),
-                data: String::from_slice(&env, "b"),
             },
             SplitRequest {
                 amount: 200000,
                 to: to.clone(),
-                data: String::from_slice(&env, "c"),
             },
         ],
     );

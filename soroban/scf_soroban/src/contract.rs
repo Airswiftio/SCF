@@ -11,7 +11,9 @@ use crate::owner::{
     check_owner, read_all_owned, read_owner, read_recipient, write_owner, write_recipient,
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use crate::sub_nft::{read_sub_nft, read_sub_nft_disabled, write_sub_nft, write_sub_nft_disabled};
+use crate::sub_nft::{
+    read_sub_nft, read_sub_nft_disabled, update_sub_nft_data, write_sub_nft, write_sub_nft_disabled,
+};
 use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String, Vec};
 
 #[contract]
@@ -372,7 +374,6 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let admin = read_administrator(&env);
         admin.require_auth();
 
-        let sub_nft = read_sub_nft(&env, id);
-        write_sub_nft(&env, id, sub_nft.root, sub_nft.amount, data);
+        update_sub_nft_data(&env, id, data);
     }
 }

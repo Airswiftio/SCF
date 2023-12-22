@@ -49,3 +49,13 @@ pub fn write_sub_nft_disabled(env: &Env, id: i128, disabled: bool) {
         .persistent()
         .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
+
+pub fn update_sub_nft_data(env: &Env, id: i128, data: String) {
+    let mut sub_nft = read_sub_nft(env, id);
+    sub_nft.data = data;
+    let key = DataKey::SubNFTInfo(id);
+    env.storage().persistent().set(&key, &sub_nft);
+    env.storage()
+        .persistent()
+        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+}
