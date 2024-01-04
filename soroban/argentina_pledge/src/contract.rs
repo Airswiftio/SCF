@@ -1,4 +1,4 @@
-use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String, Vec};
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
@@ -9,11 +9,9 @@ use crate::{
     ext_token::{read_ext_token, write_ext_token},
     interface::TokenizedCertificateTrait,
     owner::{check_owner, read_owner, write_owner},
-    storage_types::{
-        ExtTokenInfo, HashMetadata, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD,
-    },
+    storage_types::{ExtTokenInfo, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
     token_data::{
-        read_amount, read_metadata, read_redeem_time, write_amount, write_metadata,
+        read_amount, read_file_hashes, read_redeem_time, write_amount, write_file_hashes,
         write_redeem_time,
     },
 };
@@ -52,14 +50,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&e, admin, new_admin)
     }
 
-    fn mint(
-        e: Env,
-        amount: u32,
-        redeem_time: u64,
-        po_hash: String,
-        invoice_hash: String,
-        bol_hash: String,
-    ) {
+    fn mint(e: Env, amount: u32, redeem_time: u64, file_hashes: Vec<String>) -> i128 {
         let admin = read_admin(&e);
         admin.require_auth();
 
@@ -71,19 +62,12 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let to = e.current_contract_address();
         write_amount(&e, id, amount);
         write_redeem_time(&e, id, redeem_time);
-        write_metadata(
-            &e,
-            id,
-            HashMetadata {
-                po_hash,
-                invoice_hash,
-                bol_hash,
-            },
-        );
+        write_file_hashes(&e, id, file_hashes);
         write_owner(&e, id, Some(to.clone()));
         increment_supply(&e);
 
         event::mint(&e, to, id);
+        id
     }
 
     fn transfer(e: Env, from: Address, to: Address, id: i128) {
@@ -205,11 +189,11 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         read_owner(&e, id)
     }
 
-    fn get_metadata(e: Env, id: i128) -> HashMetadata {
+    fn get_file_hashes(e: Env, id: i128) -> Vec<String> {
         e.storage()
             .instance()
             .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_metadata(&e, id)
+        read_file_hashes(&e, id)
     }
 
     fn get_ext_token(e: Env) -> (Address, u32) {

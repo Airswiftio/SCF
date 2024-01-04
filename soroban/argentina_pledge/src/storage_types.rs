@@ -14,14 +14,6 @@ pub struct ExtTokenInfo {
     pub decimals: u32,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-#[contracttype]
-pub struct HashMetadata {
-    pub po_hash: String,
-    pub invoice_hash: String,
-    pub bol_hash: String,
-}
-
 #[derive(Clone)]
 #[contracttype]
 pub struct ApprovalAll {
@@ -42,7 +34,7 @@ pub enum DataKey {
     Admin,
     ExtToken,
     Supply,
-    Metadata(i128),
+    FileHashes(i128),
     Amount(i128),
     RedeemTime(i128),
     Owner(i128),

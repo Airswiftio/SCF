@@ -1,6 +1,4 @@
-use soroban_sdk::{Address, Env, String};
-
-use crate::storage_types::HashMetadata;
+use soroban_sdk::{Address, Env, String, Vec};
 
 pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
@@ -20,14 +18,7 @@ pub trait TokenizedCertificateTrait {
 
     /// Admin calls this function. Minted TC belongs to contract.
     /// Emit event with topics = ["mint", to: Address], data = [id: i128]
-    fn mint(
-        e: Env,
-        amount: u32,
-        redeem_time: u64,
-        po_hash: String,
-        invoice_hash: String,
-        bol_hash: String,
-    );
+    fn mint(e: Env, amount: u32, redeem_time: u64, file_hashes: Vec<String>) -> i128;
 
     /// Transfer token 'id' between specified 'from' and 'to' addresses
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
@@ -63,8 +54,8 @@ pub trait TokenizedCertificateTrait {
     /// Returns the owner of a given TC
     fn get_owner(e: Env, id: i128) -> Address;
 
-    /// Returns the invoice, PO, and BOL hashes of a given TC
-    fn get_metadata(e: Env, id: i128) -> HashMetadata;
+    /// Returns the list of file hashes associated with a given TC
+    fn get_file_hashes(e: Env, id: i128) -> Vec<String>;
 
     /// Returns the address and decimals of the ext_token
     fn get_ext_token(e: Env) -> (Address, u32);

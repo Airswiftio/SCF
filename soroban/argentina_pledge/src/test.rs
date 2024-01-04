@@ -1,10 +1,8 @@
 #![cfg(test)]
-use soroban_sdk::{symbol_short, vec, Env, Error, IntoVal, String};
-use soroban_sdk::{testutils::Address as _, Address};
+use soroban_sdk::{testutils::Address as _, vec, Address, Env, Error, String};
 
 use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
 use crate::errors::Error as ContractError;
-use crate::storage_types::HashMetadata;
 use crate::test_util::{set_ledger_timestamp, setup_test_tc_contract, setup_test_token};
 
 #[test]
@@ -31,20 +29,24 @@ fn test_mint() {
     tc_client.mint(
         &1000000,
         &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
+        &vec![
+            &e,
+            String::from_slice(&e, "a"),
+            String::from_slice(&e, "b"),
+            String::from_slice(&e, "c"),
+        ],
     );
 
     assert_eq!(tc_client.get_amount(&0), 1000000);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
     assert_eq!(
-        tc_client.get_metadata(&0),
-        HashMetadata {
-            po_hash: String::from_slice(&e, "a"),
-            invoice_hash: String::from_slice(&e, "b"),
-            bol_hash: String::from_slice(&e, "c")
-        }
+        tc_client.get_file_hashes(&0),
+        vec![
+            &e,
+            String::from_slice(&e, "a"),
+            String::from_slice(&e, "b"),
+            String::from_slice(&e, "c"),
+        ],
     );
 
     assert_eq!(
@@ -63,13 +65,7 @@ fn test_pledge() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     let user = Address::random(&e);
@@ -86,13 +82,7 @@ fn test_pledge_insufficient_balance() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     let user = Address::random(&e);
@@ -110,13 +100,7 @@ fn test_transfer() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     let user = Address::random(&e);
@@ -138,13 +122,7 @@ fn test_transfer_not_owned() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     // try to transfer while the contract still owns TC #0
@@ -168,13 +146,7 @@ fn test_appr_transfer_from() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     let user = Address::random(&e);
@@ -207,27 +179,9 @@ fn test_appr_all_transfer_from() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
-    tc_client.mint(
-        &2000000,
-        &1641024000,
-        &String::from_slice(&e, "d"),
-        &String::from_slice(&e, "e"),
-        &String::from_slice(&e, "f"),
-    );
-    tc_client.mint(
-        &3000000,
-        &1641024000,
-        &String::from_slice(&e, "g"),
-        &String::from_slice(&e, "h"),
-        &String::from_slice(&e, "i"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
+    tc_client.mint(&2000000, &1641024000, &vec![&e]);
+    tc_client.mint(&3000000, &1641024000, &vec![&e]);
 
     let user = Address::random(&e);
     token_admin_client.mint(&user.clone(), &10000000);
@@ -275,13 +229,7 @@ fn test_redeem_too_early() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
     let user = Address::random(&e);
     token_admin_client.mint(&user.clone(), &10000000);
@@ -308,13 +256,7 @@ fn test_redeem() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
     let user = Address::random(&e);
     token_admin_client.mint(&user, &10000000);
@@ -339,13 +281,7 @@ fn test_redeem_not_owned() {
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
     let user = Address::random(&e);
     token_admin_client.mint(&user.clone(), &10000000);
