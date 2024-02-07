@@ -6,9 +6,11 @@ pub fn read_sub_nft(env: &Env, id: i128) -> SubNFT {
     let key = DataKey::SubNFTInfo(id);
     match env.storage().persistent().get::<DataKey, SubNFT>(&key) {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => panic_with_error!(env, Error::NotFound),
@@ -22,9 +24,11 @@ pub fn write_sub_nft(env: &Env, id: i128, root: i128, amount: u32, data: String)
         None => {
             let sub_nft = SubNFT { root, amount, data };
             env.storage().persistent().set(&key, &sub_nft);
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
         }
     }
 }
@@ -33,9 +37,11 @@ pub fn read_sub_nft_disabled(env: &Env, id: i128) -> bool {
     let key = DataKey::Disabled(id);
     match env.storage().persistent().get::<DataKey, bool>(&key) {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => panic_with_error!(env, Error::NotFound),
@@ -47,7 +53,7 @@ pub fn write_sub_nft_disabled(env: &Env, id: i128, disabled: bool) {
     env.storage().persistent().set(&key, &disabled);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn update_sub_nft_data(env: &Env, id: i128, data: String) {
@@ -57,5 +63,5 @@ pub fn update_sub_nft_data(env: &Env, id: i128, data: String) {
     env.storage().persistent().set(&key, &sub_nft);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }

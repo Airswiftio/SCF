@@ -6,7 +6,7 @@ pub fn read_offer(e: &Env, offer_id: i128) -> Option<Offer> {
     if let Some(offer) = e.storage().persistent().get::<DataKey, Offer>(&key) {
         e.storage()
             .persistent()
-            .bump(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
+            .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
         Some(offer)
     } else {
         None
@@ -37,7 +37,7 @@ pub fn write_offer(
     e.storage().persistent().set(&key, &input_offer);
     e.storage()
         .persistent()
-        .bump(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
+        .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
 }
 
 pub fn change_offer(e: &Env, offer_id: i128, status: i128) -> bool {
@@ -48,7 +48,7 @@ pub fn change_offer(e: &Env, offer_id: i128, status: i128) -> bool {
         e.storage().persistent().set(&key, &new_offer);
         e.storage()
             .persistent()
-            .bump(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
+            .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
         return true;
     } else {
         return false;

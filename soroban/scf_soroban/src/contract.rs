@@ -52,14 +52,14 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn admin(env: Env) -> Address {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_administrator(&env)
     }
 
     fn set_admin(env: Env, new_admin: Address) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
@@ -71,7 +71,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         owner.require_auth();
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&env, &owner, id);
 
         write_approval(&env, id, Some(operator.clone()));
@@ -82,7 +82,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         owner.require_auth();
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         write_approval_all(&env, owner.clone(), operator.clone(), approved);
         event::approve_all(&env, operator, owner)
     }
@@ -90,21 +90,21 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn get_appr(env: Env, id: i128) -> Address {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval(&env, id)
     }
 
     fn is_appr(env: Env, owner: Address, operator: Address) -> bool {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval_all(&env, owner, operator)
     }
 
     fn amount(env: Env, id: i128) -> u32 {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_nft = read_sub_nft(&env, id);
         sub_nft.amount
     }
@@ -112,7 +112,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn parent(env: Env, id: i128) -> i128 {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_nft = read_sub_nft(&env, id);
         sub_nft.root
     }
@@ -120,7 +120,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn owner(env: Env, id: i128) -> Address {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         update_and_read_expired(&env);
         read_owner(&env, id)
     }
@@ -128,7 +128,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn data(env: Env, id: i128) -> String {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_nft = read_sub_nft(&env, id);
         sub_nft.data
     }
@@ -136,7 +136,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn get_all_owned(env: Env, address: Address) -> Vec<i128> {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         update_and_read_expired(&env);
         read_all_owned(&env, address)
     }
@@ -144,14 +144,14 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn is_disabled(env: Env, id: i128) -> bool {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_sub_nft_disabled(&env, id)
     }
 
     fn transfer(env: Env, from: Address, to: Address, id: i128) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         update_and_read_expired(&env);
         check_owner(&env, &from, id);
         from.require_auth();
@@ -162,7 +162,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         update_and_read_expired(&env);
         check_owner(&env, &from, id);
         spender.require_auth();
@@ -183,7 +183,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn mint_original(env: Env, to: Address, data: String) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
@@ -203,7 +203,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn burn(env: Env, id: i128) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
@@ -217,7 +217,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128> {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         if read_sub_nft_disabled(&env, id) {
             // if the NFT is disabled, it has already been split
             panic_with_error!(&env, Error::NotPermitted);
@@ -245,7 +245,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
         let mut new_ids = Vec::new(&env);
         for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_nft(&env, new_id, id, req.amount, String::from_slice(&env, ""));
+            write_sub_nft(&env, new_id, id, req.amount, String::from_str(&env, ""));
             write_sub_nft_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
@@ -274,7 +274,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn redeem(env: Env, id: i128) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         if !update_and_read_expired(&env) || !read_paid(&env) || read_sub_nft_disabled(&env, id) {
             panic_with_error!(&env, Error::NotPermitted);
         }
@@ -298,7 +298,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn set_external_token_provider(env: Env, contract_addr: Address, decimals: u32) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
@@ -308,28 +308,28 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn check_paid(env: Env) -> bool {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_paid(&env)
     }
 
     fn check_expired(env: Env) -> bool {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         update_and_read_expired(&env)
     }
 
     fn recipient(env: Env, id: i128) -> Address {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_recipient(&env, id)
     }
 
     fn sign_off(env: Env, id: i128) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let expired = update_and_read_expired(&env);
         let owner = read_owner(&env, id);
@@ -348,7 +348,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn pay_off(env: Env, from: Address) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let paid = read_paid(&env);
         if paid {
@@ -370,7 +370,7 @@ impl NonFungibleTokenTrait for NonFungibleToken {
     fn set_nft_data(env: Env, id: i128, data: String) {
         env.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 

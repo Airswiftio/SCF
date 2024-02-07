@@ -8,9 +8,11 @@ pub fn read_owner(env: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
     match env.storage().persistent().get::<DataKey, Address>(&key) {
         Some(balance) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             balance
         }
         None => panic_with_error!(env, Error::NotFound),
@@ -22,7 +24,7 @@ pub fn write_owner(env: &Env, id: i128, owner: Option<Address>) {
     env.storage().persistent().set(&key, &owner);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn check_owner(env: &Env, auth: &Address, id: i128) {
@@ -35,9 +37,11 @@ pub fn read_recipient(env: &Env, id: i128) -> Address {
     let key = DataKey::Recipient(id);
     match env.storage().persistent().get::<DataKey, Address>(&key) {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => panic_with_error!(env, Error::NotFound),
@@ -49,7 +53,7 @@ pub fn write_recipient(env: &Env, id: i128, recipient: &Address) {
     env.storage().persistent().set(&key, recipient);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn read_all_owned(env: &Env, address: Address) -> Vec<i128> {

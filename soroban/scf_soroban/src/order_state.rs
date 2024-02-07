@@ -38,9 +38,11 @@ fn read_expired(env: &Env) -> bool {
     let key = DataKey::Expired;
     match env.storage().persistent().get::<DataKey, bool>(&key) {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => false,
@@ -52,16 +54,18 @@ fn write_expired(env: &Env, val: bool) {
     env.storage().persistent().set(&key, &val);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn read_paid(env: &Env) -> bool {
     let key = DataKey::Paid;
     match env.storage().persistent().get::<DataKey, bool>(&key) {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => false,
@@ -73,5 +77,5 @@ pub fn write_paid(env: &Env, val: bool) {
     env.storage().persistent().set(&key, &val);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }

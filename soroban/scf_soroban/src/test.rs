@@ -15,10 +15,10 @@ fn test_initialize() {
     let contract_id = env.register_contract(None, NonFungibleToken);
     let client = NonFungibleTokenClient::new(&env, &contract_id);
 
-    let admin = Address::random(&env);
+    let admin = Address::generate(&env);
     let invoice_num = 12345678;
     let po_num = 1;
-    let buyer = Address::random(&env);
+    let buyer = Address::generate(&env);
     let total_amount: u32 = 1000000;
     let start_time = 1640995200; // 2022-01-01 00:00:00 UTC+0
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
@@ -40,17 +40,17 @@ fn test_initialize() {
 fn test_mint_original() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
     assert_eq!(1000000, client.amount(&0));
     assert_eq!(0, client.parent(&0));
     assert_eq!(false, client.is_disabled(&0));
-    assert_eq!(String::from_slice(&env, "a"), client.data(&0));
+    assert_eq!(String::from_str(&env, "a"), client.data(&0));
 }
 
 #[test]
@@ -58,27 +58,27 @@ fn test_mint_original() {
 fn test_mint_original_twice() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
-    client.mint_original(&to, &String::from_slice(&env, "a")); // should panic
+    client.mint_original(&to, &String::from_str(&env, "a")); // should panic
 }
 
 #[test]
 fn test_split() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -96,22 +96,22 @@ fn test_split() {
         ],
     );
 
-    client.set_nft_data(&1, &String::from_slice(&env, "b"));
+    client.set_nft_data(&1, &String::from_str(&env, "b"));
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
-    assert_eq!(String::from_slice(&env, "b"), client.data(&1));
+    assert_eq!(String::from_str(&env, "b"), client.data(&1));
 
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
-    assert_eq!(String::from_slice(&env, ""), client.data(&2));
+    assert_eq!(String::from_str(&env, ""), client.data(&2));
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
     assert_eq!(0, client.parent(&3));
-    assert_eq!(String::from_slice(&env, "a"), client.data(&3));
+    assert_eq!(String::from_str(&env, "a"), client.data(&3));
 
     assert_eq!(true, client.is_disabled(&0));
 }
@@ -120,12 +120,12 @@ fn test_split() {
 fn test_split_nested() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -166,12 +166,12 @@ fn test_split_nested() {
 fn test_split_twice() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     client.split(
         &0,
         &vec![
@@ -199,12 +199,12 @@ fn test_split_twice() {
 fn test_split_exceed() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -228,12 +228,12 @@ fn test_split_exceed() {
 fn test_split_empty() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     client.split(&0, &vec![&env]);
 }
 
@@ -241,13 +241,13 @@ fn test_split_empty() {
 fn test_transfer() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let acc1 = Address::random(&env);
-    let acc2 = Address::random(&env);
-    client.mint_original(&acc1, &String::from_slice(&env, "a"));
+    let acc1 = Address::generate(&env);
+    let acc2 = Address::generate(&env);
+    client.mint_original(&acc1, &String::from_str(&env, "a"));
     assert_eq!(acc1, client.owner(&0));
 
     client.transfer(&acc1, &acc2, &0);
@@ -258,11 +258,11 @@ fn test_transfer() {
 fn test_burn() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    client.mint_original(&admin, &String::from_slice(&env, "a"));
+    client.mint_original(&admin, &String::from_str(&env, "a"));
     let res = client.try_owner(&0);
     assert_eq!(res.is_ok(), true);
 
@@ -275,8 +275,8 @@ fn test_burn() {
 fn test_pay_off() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token
@@ -295,8 +295,8 @@ fn test_pay_off() {
 fn test_check_expired() {
     let env = Env::default();
     env.ledger().with_mut(|li| li.timestamp = 1640995200); // 2022-01-01 00:00:00 UTC+0
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
     assert_eq!(client.check_expired(), false);
@@ -309,14 +309,14 @@ fn test_check_expired() {
 fn test_expire_auto_transfer() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    let to2 = Address::random(&env);
-    let to3 = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    let to2 = Address::generate(&env);
+    let to3 = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     client.split(
@@ -367,8 +367,8 @@ fn test_redeem() {
     // setup env with specific timestamp
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token and pay the contract
@@ -378,8 +378,8 @@ fn test_redeem() {
     let ext_client = TokenClient::new(&env, ext_token_addr);
     ext_client.mock_all_auths_allowing_non_root_auth();
 
-    let supplier = Address::random(&env);
-    client.mint_original(&supplier, &String::from_slice(&env, "a"));
+    let supplier = Address::generate(&env);
+    client.mint_original(&supplier, &String::from_str(&env, "a"));
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
@@ -406,12 +406,12 @@ fn test_redeem() {
 fn test_sign_off() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     let split_req = SplitRequest {
@@ -429,14 +429,14 @@ fn test_sign_off() {
 fn test_get_all_owned() {
     let env = Env::default();
     env.mock_all_auths();
-    let admin = Address::random(&env);
-    let buyer = Address::random(&env);
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    let to = Address::random(&env);
+    let to = Address::generate(&env);
     assert_eq!(vec![&env], client.get_all_owned(&to));
 
-    client.mint_original(&to, &String::from_slice(&env, "a"));
+    client.mint_original(&to, &String::from_str(&env, "a"));
 
     assert_eq!(vec![&env, 0], client.get_all_owned(&to));
 

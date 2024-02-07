@@ -12,9 +12,11 @@ pub fn read_external_token(env: &Env) -> ExternalToken {
         .get::<DataKey, ExternalToken>(&key)
     {
         Some(data) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => panic_with_error!(env, Error::InvalidContract),
@@ -30,5 +32,5 @@ pub fn write_external_token(env: &Env, addr: Address, decimals: u32) {
     env.storage().persistent().set(&key, &ext_token);
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }

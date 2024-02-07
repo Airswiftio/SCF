@@ -58,7 +58,7 @@ impl OfferPoolTrait for OfferPool {
         } else {
             e.storage()
                 .instance()
-                .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+                .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
             // Transfer the offer amount to the contract address until the offer is accepted or expired.
             let token_client = token::Client::new(&e, &get_token(&e));
             from.require_auth();
@@ -72,7 +72,7 @@ impl OfferPoolTrait for OfferPool {
     fn expire_offer(e: Env, from: Address, offer_id: i128) -> Result<bool, Error> {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
             Some(x) => {
@@ -102,7 +102,7 @@ impl OfferPoolTrait for OfferPool {
     fn get_offer(e: Env, offer_id: i128) -> Result<Offer, Error> {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
             Some(x) => Ok(x),
@@ -114,7 +114,7 @@ impl OfferPoolTrait for OfferPool {
     fn accept_offer(e: Env, to: Address, offer_id: i128) -> Result<bool, Error> {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let offer = read_offer(&e, offer_id);
         match offer {
             Some(x) => {
