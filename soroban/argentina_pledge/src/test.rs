@@ -11,7 +11,7 @@ fn test_initialize() {
     let contract_id = e.register_contract(None, TokenizedCertificate);
     let client = TokenizedCertificateClient::new(&e, &contract_id);
 
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     client.initialize(&admin, &token_client.address, &0);
 
@@ -21,7 +21,7 @@ fn test_initialize() {
 #[test]
 fn test_mint() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -31,9 +31,9 @@ fn test_mint() {
         &1641024000,
         &vec![
             &e,
-            String::from_slice(&e, "a"),
-            String::from_slice(&e, "b"),
-            String::from_slice(&e, "c"),
+            String::from_str(&e, "a"),
+            String::from_str(&e, "b"),
+            String::from_str(&e, "c"),
         ],
     );
 
@@ -43,9 +43,9 @@ fn test_mint() {
         tc_client.get_file_hashes(&0),
         vec![
             &e,
-            String::from_slice(&e, "a"),
-            String::from_slice(&e, "b"),
-            String::from_slice(&e, "c"),
+            String::from_str(&e, "a"),
+            String::from_str(&e, "b"),
+            String::from_str(&e, "c"),
         ],
     );
 
@@ -60,7 +60,7 @@ fn test_mint() {
 #[test]
 fn test_pledge() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -68,7 +68,7 @@ fn test_pledge() {
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), user);
@@ -77,7 +77,7 @@ fn test_pledge() {
 #[test]
 fn test_pledge_insufficient_balance() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -85,7 +85,7 @@ fn test_pledge_insufficient_balance() {
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10);
     let res = tc_client.try_pledge(&user.clone(), &0);
     assert_eq!(res.is_ok(), false);
@@ -95,7 +95,7 @@ fn test_pledge_insufficient_balance() {
 #[test]
 fn test_transfer() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -103,13 +103,13 @@ fn test_transfer() {
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), user);
 
     // transfer to another user
-    let user2 = Address::random(&e);
+    let user2 = Address::generate(&e);
     tc_client.transfer(&user.clone(), &user2.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), user2);
 }
@@ -117,7 +117,7 @@ fn test_transfer() {
 #[test]
 fn test_transfer_not_owned() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -126,8 +126,8 @@ fn test_transfer_not_owned() {
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
     // try to transfer while the contract still owns TC #0
-    let user = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let res = tc_client.try_transfer(&user.clone(), &user2.clone(), &0);
     assert_eq!(
         res,
@@ -141,7 +141,7 @@ fn test_transfer_not_owned() {
 #[test]
 fn test_appr_transfer_from() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -149,13 +149,13 @@ fn test_appr_transfer_from() {
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
     assert_eq!(tc_client.get_owner(&0), tc_client.address);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), user);
 
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
     // initial transfer attempt from user2 to user3 should fail since user2 is not approved to transfer from user
     let res = tc_client.try_transfer(&user2.clone(), &user3.clone(), &0);
     assert_eq!(
@@ -174,7 +174,7 @@ fn test_appr_transfer_from() {
 #[test]
 fn test_appr_all_transfer_from() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
@@ -183,7 +183,7 @@ fn test_appr_all_transfer_from() {
     tc_client.mint(&2000000, &1641024000, &vec![&e]);
     tc_client.mint(&3000000, &1641024000, &vec![&e]);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
     tc_client.pledge(&user.clone(), &1);
@@ -192,8 +192,8 @@ fn test_appr_all_transfer_from() {
     assert_eq!(tc_client.get_owner(&1), user);
     assert_eq!(tc_client.get_owner(&2), user);
 
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
     // initial transfer attempt from user2 to user3 should fail since user2 is not approved to transfer from user
     let res = tc_client.try_transfer(&user2.clone(), &user3.clone(), &1);
     assert_eq!(
@@ -224,18 +224,18 @@ fn test_appr_all_transfer_from() {
 #[test]
 fn test_redeem_too_early() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
 
-    let user2 = Address::random(&e);
+    let user2 = Address::generate(&e);
     tc_client.transfer(&user.clone(), &user2.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), user2);
 
@@ -251,18 +251,18 @@ fn test_redeem_too_early() {
 #[test]
 fn test_redeem() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user, &10000000);
     tc_client.pledge(&user, &0);
 
-    let user2 = Address::random(&e);
+    let user2 = Address::generate(&e);
     tc_client.transfer(&user, &user2, &0);
     assert_eq!(tc_client.get_owner(&0), user2);
 
@@ -276,18 +276,18 @@ fn test_redeem() {
 #[test]
 fn test_redeem_not_owned() {
     let e = Env::default();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
     e.mock_all_auths();
 
     tc_client.mint(&1000000, &1641024000, &vec![&e]);
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &10000000);
     tc_client.pledge(&user.clone(), &0);
 
-    let user2 = Address::random(&e);
+    let user2 = Address::generate(&e);
 
     let res = tc_client.try_redeem(&user2.clone(), &0);
     assert_eq!(

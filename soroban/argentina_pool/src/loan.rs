@@ -45,7 +45,7 @@ pub fn write_loan(e: &Env, loan: Loan) {
     e.storage().persistent().set(&key, &loan);
     e.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn has_loan(e: &Env, offer_id: i128) -> bool {
@@ -57,9 +57,11 @@ pub fn read_loan(e: &Env, offer_id: i128) -> Loan {
     let key = DataKey::Loan(offer_id);
     match e.storage().persistent().get(&key) {
         Some(data) => {
-            e.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            e.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             data
         }
         None => panic_with_error!(&e, Error::NotFound),

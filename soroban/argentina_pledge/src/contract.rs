@@ -44,7 +44,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
 
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_admin(&e, &new_admin);
         event::set_admin(&e, admin, new_admin)
@@ -56,7 +56,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
 
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let id = read_supply(&e);
         let to = e.current_contract_address();
@@ -74,7 +74,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &from, id);
 
         write_owner(&e, id, Some(to.clone()));
@@ -85,7 +85,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         spender.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &from, id);
 
         if read_approval_all(&e, from.clone(), spender.clone()) || spender == read_approval(&e, id)
@@ -104,7 +104,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         owner.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &owner, id);
 
         write_approval(&e, id, Some(operator.clone()));
@@ -115,7 +115,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         owner.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         write_approval_all(&e, owner.clone(), operator.clone(), approved);
         event::approve_all(&e, operator, owner)
     }
@@ -123,14 +123,14 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
     fn get_appr(e: Env, id: i128) -> Address {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval(&e, id)
     }
 
     fn is_appr(e: Env, owner: Address, operator: Address) -> bool {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_approval_all(&e, owner, operator)
     }
 
@@ -138,7 +138,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &e.current_contract_address(), id);
 
         // Transfer USDC from "from" to the contract address
@@ -157,7 +157,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         to.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &to, id);
         if e.ledger().timestamp() < read_redeem_time(&e, id) {
             panic_with_error!(&e, Error::NotRedeemable);
@@ -178,28 +178,28 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
     fn get_amount(e: Env, id: i128) -> u32 {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_amount(&e, id)
     }
 
     fn get_owner(e: Env, id: i128) -> Address {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_owner(&e, id)
     }
 
     fn get_file_hashes(e: Env, id: i128) -> Vec<String> {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_file_hashes(&e, id)
     }
 
     fn get_ext_token(e: Env) -> (Address, u32) {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let ext_token = read_ext_token(&e);
         (ext_token.address, ext_token.decimals)
     }
@@ -207,7 +207,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
     fn get_redeem_time(e: Env, id: i128) -> u64 {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_redeem_time(&e, id)
     }
 }

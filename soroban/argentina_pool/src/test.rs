@@ -1,5 +1,5 @@
 #![cfg(test)]
-use soroban_sdk::{testutils::Address as _, token, Address, Env, Error, IntoVal, String};
+use soroban_sdk::{testutils::Address as _, token, Address, Env, Error, String, Vec};
 
 use crate::{
     contract::LiquidityPoolClient,
@@ -15,7 +15,7 @@ fn test_initialize() {
     let contract_id = e.register_contract(None, LiquidityPool);
     let client = LiquidityPoolClient::new(&e, &contract_id);
 
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let token_wasm_hash = install_token_wasm(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     client.initialize(
@@ -41,7 +41,7 @@ fn test_initialize_twice() {
     let contract_id = e.register_contract(None, LiquidityPool);
     let client = LiquidityPoolClient::new(&e, &contract_id);
 
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let token_wasm_hash = install_token_wasm(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     client.initialize(
@@ -65,11 +65,11 @@ fn test_initialize_twice() {
 fn test_deposit() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
     client.deposit(&user.clone(), &600000);
     assert_eq!(token_client.balance(&user.clone()), 400000);
@@ -83,11 +83,11 @@ fn test_deposit() {
 fn test_deposit_invalid_balance() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     let res = client.try_deposit(&user.clone(), &1);
     assert_eq!(res, Err(Ok(Error::from_contract_error(10))));
 }
@@ -96,11 +96,11 @@ fn test_deposit_invalid_balance() {
 fn test_withdraw() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
     client.deposit(&user.clone(), &600000);
     client.withdraw(&user.clone(), &100000);
@@ -116,11 +116,11 @@ fn test_withdraw() {
 fn test_withdraw_invalid_balance() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
-    let user = Address::random(&e);
+    let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
     let res = client.try_withdraw(&user.clone(), &1);
     assert_eq!(res.is_err(), true);
@@ -130,23 +130,17 @@ fn test_withdraw_invalid_balance() {
 fn test_create_loan_offer() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10000000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
 
     // trying to create a loan before depositing for liquidity tokens should fail
@@ -176,24 +170,18 @@ fn test_create_loan_offer() {
 fn test_cancel_loan_offer() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     let liquidity_token_client = token::Client::new(&e, &client.get_liquidity_token());
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10000000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
     client.deposit(&creditor.clone(), &10000000000000);
     client.create_loan_offer(&creditor.clone(), &loan_id, &tc_client.address, &0);
@@ -211,25 +199,19 @@ fn test_cancel_loan_offer() {
 fn test_accept_loan_offer() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     let liquidity_token_client = token::Client::new(&e, &client.get_liquidity_token());
     e.budget().reset_default();
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10000000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), borrower.clone());
     client.deposit(&creditor.clone(), &10000000000000);
@@ -258,25 +240,19 @@ fn test_accept_loan_offer() {
 fn test_payoff_loan() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     let liquidity_token_client = token::Client::new(&e, &client.get_liquidity_token());
     e.budget().reset_default();
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10000000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), borrower.clone());
     client.deposit(&creditor.clone(), &10000000000000);
@@ -305,25 +281,19 @@ fn test_payoff_loan() {
 fn test_payoff_loan_with_interest() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     let liquidity_token_client = token::Client::new(&e, &client.get_liquidity_token());
     e.budget().reset_default();
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10000000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), borrower.clone());
     client.deposit(&creditor.clone(), &10000000000000);
@@ -353,25 +323,19 @@ fn test_payoff_loan_with_interest() {
 fn test_close_loan() {
     let e = Env::default();
     e.mock_all_auths();
-    let admin = Address::random(&e);
+    let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
     let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     let liquidity_token_client = token::Client::new(&e, &client.get_liquidity_token());
     e.budget().reset_default();
 
-    let borrower = Address::random(&e);
-    let creditor = Address::random(&e);
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
     let loan_id = 123i128;
     token_admin_client.mint(&borrower.clone(), &10500000000000);
     token_admin_client.mint(&creditor.clone(), &10000000000000);
-    tc_client.mint(
-        &1000000,
-        &1641024000,
-        &String::from_slice(&e, "a"),
-        &String::from_slice(&e, "b"),
-        &String::from_slice(&e, "c"),
-    );
+    tc_client.mint(&1000000, &1641024000, &Vec::<String>::new(&e));
     tc_client.pledge(&borrower.clone(), &0);
     assert_eq!(tc_client.get_owner(&0), borrower.clone());
     client.deposit(&creditor.clone(), &10000000000000);

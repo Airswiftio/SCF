@@ -10,16 +10,18 @@ pub fn write_owner(e: &Env, id: i128, owner: Option<Address>) {
     e.storage().persistent().set(&key, &owner);
     e.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn read_owner(e: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
     match e.storage().persistent().get::<DataKey, Address>(&key) {
         Some(owner) => {
-            e.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            e.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             owner
         }
         None => panic_with_error!(&e, Error::NotFound),

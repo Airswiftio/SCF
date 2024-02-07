@@ -10,7 +10,7 @@ pub fn read_approval(e: &Env, id: i128) -> Address {
     if let Some(approval) = e.storage().persistent().get::<DataKey, Address>(&key) {
         e.storage()
             .persistent()
-            .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
         approval
     } else {
         panic_with_error!(e, Error::NotAuthorized)
@@ -22,7 +22,7 @@ pub fn read_approval_all(e: &Env, owner: Address, operator: Address) -> bool {
     if let Some(approval) = e.storage().persistent().get::<DataKey, bool>(&key) {
         e.storage()
             .persistent()
-            .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
         approval
     } else {
         false
@@ -34,7 +34,7 @@ pub fn write_approval(e: &Env, id: i128, operator: Option<Address>) {
     e.storage().persistent().set(&key, &operator);
     e.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
 pub fn write_approval_all(e: &Env, owner: Address, operator: Address, approved: bool) {
@@ -42,5 +42,5 @@ pub fn write_approval_all(e: &Env, owner: Address, operator: Address, approved: 
     e.storage().persistent().set(&key, &approved);
     e.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }

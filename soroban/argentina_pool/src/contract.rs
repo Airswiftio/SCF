@@ -78,7 +78,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_admin(&e, &new_admin);
     }
@@ -89,7 +89,7 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         write_rate_percent(&e, new_rate);
     }
@@ -98,7 +98,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // Transfer USDC from "from" to the contract address
         let ext_token = read_ext_token(&e);
@@ -113,7 +113,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // Burn the specified number of liquidity tokens from "from"
         token::Client::new(&e, &read_pool_token(&e).address).burn(&from, &amount);
@@ -130,7 +130,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         if has_loan(&e, offer_id) {
             panic_with_error!(&e, Error::NotEmpty);
@@ -158,7 +158,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         loan.creditor.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         if loan.status != LoanStatus::Pending {
             panic_with_error!(&e, Error::InvalidStatus);
@@ -181,7 +181,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         from.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         let mut loan = read_loan(&e, offer_id);
         if loan.status != LoanStatus::Pending {
@@ -218,7 +218,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         loan.borrower.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // transfer liquidity tokens from caller (borrower) to smart contract
         // pool rate is the additional percent rate needed to pay off the loan.
@@ -243,7 +243,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         loan.creditor.require_auth();
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // transfer the TC from creditor (caller) to borrower
         tc_contract::Client::new(&e, &loan.tc_address).transfer(
@@ -269,14 +269,14 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         loan.rate_percent
     }
 
     fn get_pool_rate(e: Env) -> u32 {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_rate_percent(&e)
     }
 
@@ -284,7 +284,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         (loan.tc_address, loan.tc_id)
     }
 
@@ -292,7 +292,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         loan.borrower
     }
 
@@ -300,21 +300,21 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         loan.creditor
     }
 
     fn get_liquidity_token(e: Env) -> Address {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_pool_token(&e).address
     }
 
     fn get_ext_token(e: Env) -> (Address, u32) {
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let ext_token = read_ext_token(&e);
         (ext_token.address, ext_token.decimals)
     }
@@ -323,7 +323,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let scaled_amount = calculate_scaled_amount_with_interest(
             loan.amount,
             read_pool_token(&e).decimals,
@@ -339,7 +339,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         loan.amount
     }
 
@@ -347,7 +347,7 @@ impl LiquidityPoolTrait for LiquidityPool {
         let loan = read_loan(&e, offer_id);
         e.storage()
             .instance()
-            .bump(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         loan.status as u32
     }
 }
