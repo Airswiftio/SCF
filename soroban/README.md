@@ -3,7 +3,7 @@
 ## Environment
 Follow the steps according to https://soroban.stellar.org/docs/getting-started/setup 
 * For convenience, the repository contains scripts for deploying and bumping smart contracts. Specify the network name in the `network_name` file, the contents of which will be passed to any `--network` argument in the deploy and bump scripts.
-* To automatically bump the scripts 
+* To automatically bump the contracts, you can call the scripts at regular intervals via crontab. Once per month is enough on official Stellar mainnet/testnet/futurenet. For networks running on local Stellar quickstart images, it may be better to bump once per week due to the quicker ledger time.
 
 ## Build
 1. ```bash
