@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, unwrap::UnwrapOptimized, Env, String, Symbol};
+use soroban_sdk::{contracttype, symbol_short, unwrap::UnwrapOptimized, Address, Env, Symbol};
 
 const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
 
@@ -7,10 +7,8 @@ const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
 pub struct TokenOrderInfo {
     pub invoice_num: i128,
     pub po_num: i128,
+    pub buyer_address: Address,
     pub total_amount: u32,
-    pub checksum: String,
-    pub supplier_name: String,
-    pub buyer_name: String,
     pub start_time: u64,
     pub end_time: u64,
 }
@@ -46,10 +44,8 @@ pub fn write_order_info(
     env: &Env,
     invoice_num: i128,
     po_num: i128,
+    buyer_address: Address,
     total_amount: u32,
-    checksum: String,
-    supplier_name: String,
-    buyer_name: String,
     start_time: u64,
     end_time: u64,
 ) {
@@ -57,10 +53,8 @@ pub fn write_order_info(
     let order_info = TokenOrderInfo {
         invoice_num,
         po_num,
+        buyer_address,
         total_amount,
-        checksum,
-        supplier_name,
-        buyer_name,
         start_time,
         end_time,
     };
@@ -80,4 +74,9 @@ pub fn read_total_amount(env: &Env) -> u32 {
 pub fn read_end_time(env: &Env) -> u64 {
     let util = OrderInfoUtils::new(env);
     util.get_order_info().end_time
+}
+
+pub fn read_buyer_address(env: &Env) -> Address {
+    let util = OrderInfoUtils::new(env);
+    util.get_order_info().buyer_address
 }

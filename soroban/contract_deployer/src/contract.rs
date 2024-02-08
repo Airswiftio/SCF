@@ -3,8 +3,7 @@
 use crate::admin::{has_administrator, write_administrator};
 use crate::errors::Error;
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, Address, BytesN, Env,
-    IntoVal, Symbol, Val, Vec,
+    contract, contractimpl, panic_with_error, Address, BytesN, Env, IntoVal, Symbol, Val, Vec,
 };
 
 pub trait DeployerTrait {
