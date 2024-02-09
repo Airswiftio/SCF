@@ -4,6 +4,7 @@ use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
 use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
 use soroban_sdk::testutils::Ledger;
+use soroban_sdk::Vec;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, token::StellarAssetClient, vec, Address,
     Env, String,
@@ -45,12 +46,26 @@ fn test_mint_original() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(
+        &to,
+        &vec![
+            &env,
+            String::from_str(&env, "a"),
+            String::from_str(&env, "b"),
+        ],
+    );
     assert_eq!(to, client.owner(&0));
     assert_eq!(1000000, client.amount(&0));
     assert_eq!(0, client.parent(&0));
     assert_eq!(false, client.is_disabled(&0));
-    assert_eq!(String::from_str(&env, "a"), client.data(&0));
+    assert_eq!(
+        vec![
+            &env,
+            String::from_str(&env, "a"),
+            String::from_str(&env, "b"),
+        ],
+        client.data(&0)
+    );
 }
 
 #[test]
@@ -63,10 +78,10 @@ fn test_mint_original_twice() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(to, client.owner(&0));
 
-    client.mint_original(&to, &String::from_str(&env, "a")); // should panic
+    client.mint_original(&to, &vec![&env]); // should panic
 }
 
 #[test]
@@ -78,7 +93,7 @@ fn test_split() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -96,22 +111,22 @@ fn test_split() {
         ],
     );
 
-    client.set_nft_data(&1, &String::from_str(&env, "b"));
+    client.set_nft_data(&1, &vec![&env, String::from_str(&env, "b")]);
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
-    assert_eq!(String::from_str(&env, "b"), client.data(&1));
+    assert_eq!(vec![&env, String::from_str(&env, "b")], client.data(&1));
 
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
-    assert_eq!(String::from_str(&env, ""), client.data(&2));
+    assert_eq!(vec![&env], client.data(&2));
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
     assert_eq!(0, client.parent(&3));
-    assert_eq!(String::from_str(&env, "a"), client.data(&3));
+    assert_eq!(vec![&env], client.data(&3));
 
     assert_eq!(true, client.is_disabled(&0));
 }
@@ -125,7 +140,7 @@ fn test_split_nested() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -171,7 +186,7 @@ fn test_split_twice() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     client.split(
         &0,
         &vec![
@@ -204,7 +219,7 @@ fn test_split_exceed() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -233,7 +248,7 @@ fn test_split_empty() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     client.split(&0, &vec![&env]);
 }
 
@@ -247,7 +262,7 @@ fn test_transfer() {
 
     let acc1 = Address::generate(&env);
     let acc2 = Address::generate(&env);
-    client.mint_original(&acc1, &String::from_str(&env, "a"));
+    client.mint_original(&acc1, &vec![&env]);
     assert_eq!(acc1, client.owner(&0));
 
     client.transfer(&acc1, &acc2, &0);
@@ -262,7 +277,7 @@ fn test_burn() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    client.mint_original(&admin, &String::from_str(&env, "a"));
+    client.mint_original(&admin, &vec![&env]);
     let res = client.try_owner(&0);
     assert_eq!(res.is_ok(), true);
 
@@ -316,7 +331,7 @@ fn test_expire_auto_transfer() {
     let to = Address::generate(&env);
     let to2 = Address::generate(&env);
     let to3 = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(to, client.owner(&0));
 
     client.split(
@@ -379,7 +394,7 @@ fn test_redeem() {
     ext_client.mock_all_auths_allowing_non_root_auth();
 
     let supplier = Address::generate(&env);
-    client.mint_original(&supplier, &String::from_str(&env, "a"));
+    client.mint_original(&supplier, &vec![&env]);
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
@@ -411,7 +426,7 @@ fn test_sign_off() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
     assert_eq!(to, client.owner(&0));
 
     let split_req = SplitRequest {
@@ -436,7 +451,7 @@ fn test_get_all_owned() {
     let to = Address::generate(&env);
     assert_eq!(vec![&env], client.get_all_owned(&to));
 
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&to, &vec![&env]);
 
     assert_eq!(vec![&env, 0], client.get_all_owned(&to));
 

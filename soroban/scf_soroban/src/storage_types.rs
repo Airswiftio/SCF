@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, String};
+use soroban_sdk::{contracttype, Address, String, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 7 * DAY_IN_LEDGERS;
@@ -46,7 +46,7 @@ pub enum DataKey {
 pub struct SubNFT {
     pub root: i128,
     pub amount: u32,
-    pub data: String,
+    pub file_hashes: Vec<String>,
 }
 
 #[contracttype]

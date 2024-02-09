@@ -1,6 +1,6 @@
 use crate::errors::Error;
 use crate::storage_types::{DataKey, SubNFT, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use soroban_sdk::{panic_with_error, Env, String};
+use soroban_sdk::{panic_with_error, Env, String, Vec};
 
 pub fn read_sub_nft(env: &Env, id: i128) -> SubNFT {
     let key = DataKey::SubNFTInfo(id);
@@ -17,12 +17,16 @@ pub fn read_sub_nft(env: &Env, id: i128) -> SubNFT {
     }
 }
 
-pub fn write_sub_nft(env: &Env, id: i128, root: i128, amount: u32, data: String) {
+pub fn write_sub_nft(env: &Env, id: i128, root: i128, amount: u32, file_hashes: Vec<String>) {
     let key = DataKey::SubNFTInfo(id);
     match env.storage().persistent().get::<DataKey, SubNFT>(&key) {
         Some(_) => panic_with_error!(env, Error::NotEmpty),
         None => {
-            let sub_nft = SubNFT { root, amount, data };
+            let sub_nft = SubNFT {
+                root,
+                amount,
+                file_hashes,
+            };
             env.storage().persistent().set(&key, &sub_nft);
             env.storage().persistent().extend_ttl(
                 &key,
@@ -56,9 +60,9 @@ pub fn write_sub_nft_disabled(env: &Env, id: i128, disabled: bool) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn update_sub_nft_data(env: &Env, id: i128, data: String) {
+pub fn update_sub_nft_data(env: &Env, id: i128, file_hashes: Vec<String>) {
     let mut sub_nft = read_sub_nft(env, id);
-    sub_nft.data = data;
+    sub_nft.file_hashes = file_hashes;
     let key = DataKey::SubNFTInfo(id);
     env.storage().persistent().set(&key, &sub_nft);
     env.storage()
