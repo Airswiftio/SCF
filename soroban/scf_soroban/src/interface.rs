@@ -2,7 +2,7 @@ use soroban_sdk::{Address, Env, String, Vec};
 
 use crate::storage_types::SplitRequest;
 
-pub trait NonFungibleTokenTrait {
+pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
     // Admin interface
     // --------------------------------------------------------------------------------
@@ -41,10 +41,10 @@ pub trait NonFungibleTokenTrait {
     /// Get the owner of "id" token.
     fn owner(env: Env, id: i128) -> Address;
 
-    /// Get the data associated with "id".
-    fn data(env: Env, id: i128) -> Vec<String>;
+    /// Get the vc associated with "id".
+    fn vc(env: Env, id: i128) -> String;
 
-    /// Get all NFTs ids owned by address
+    /// Get all TC ids owned by address
     fn get_all_owned(env: Env, address: Address) -> Vec<i128>;
 
     /// Get the "disabled" value of "id" token.
@@ -58,14 +58,14 @@ pub trait NonFungibleTokenTrait {
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
     fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128);
 
-    /// Mint the root-level NFT. Will fail if the root-level NFT already exists.
-    /// The minted NFT has a value corresponding to the "total_amount" specified in the initialize() function.
-    fn mint_original(env: Env, to: Address, file_hashes: Vec<String>);
+    /// Mint the root-level TC. Will fail if the root-level TC already exists.
+    /// The minted TC has a value corresponding to the "total_amount" specified in the initialize() function.
+    fn mint_original(env: Env, to: Address, vc: String);
 
     /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
     fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128>;
 
-    /// Burn a specified NFT and transfer funds to the owner.
+    /// Burn a specified TC and transfer funds to the owner.
     fn redeem(env: Env, id: i128);
 
     /// If "admin" is the administrator or the token owner, burn token "id" from "from".
@@ -84,14 +84,14 @@ pub trait NonFungibleTokenTrait {
     /// retrieves a pending split request for a given token "id"
     fn recipient(env: Env, id: i128) -> Address;
 
-    /// approve and receive the NFT according to SplitRequest for "id"
+    /// approve and receive the TC according to SplitRequest for "id"
     fn sign_off(env: Env, id: i128);
 
     /// pay off OrderInfo.amount using token
     fn pay_off(env: Env, from: Address);
 
-    /// Update the 'data' associated with a token. Can only be called by the admin.
-    fn set_nft_data(env: Env, id: i128, file_hashes: Vec<String>);
+    /// Update the VC associated with a token. Can only be called by the admin.
+    fn set_vc(env: Env, id: i128, vc: String);
 
     // --------------------------------------------------------------------------------
     // Implementation Interface
@@ -99,19 +99,8 @@ pub trait NonFungibleTokenTrait {
 
     /// Initialize the contract.
     /// "admin" is the contract administrator.
-    /// "invoice_num" and "po_num" are additional identifiers to be used from an external system. The smart contract does not use the values.
     /// "buyer_address" specifies the account that will perform the pay-off step later.
     /// "total_amount" corresponds to the USD value of the invoice.
-    /// "start_time" is a Unix timestamp. (resolution: seconds)
-    /// "end_time" is also a Unix timestamp. It specifies the maturity date of the invoice, after which the NFTs can be redeemed for USDC or other tokens.
-    fn initialize(
-        e: Env,
-        admin: Address,
-        invoice_num: i128,
-        po_num: i128,
-        buyer_address: Address,
-        total_amount: u32,
-        start_time: u64,
-        end_time: u64,
-    );
+    /// "end_time" is a Unix timestamp. It specifies the maturity date of the invoice, after which the tokenized certificates can be redeemed for USDC or other tokens.
+    fn initialize(e: Env, admin: Address, buyer_address: Address, total_amount: u32, end_time: u64);
 }

@@ -33,7 +33,8 @@ pub enum DataKey {
     Owner(i128),
     Disabled(i128),
     Supply,
-    SubNFTInfo(i128),
+    SubTCInfo(i128),
+    VC(i128),
     OrderInfo,
     Expired,
     Paid,
@@ -43,10 +44,9 @@ pub enum DataKey {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct SubNFT {
+pub struct SubTC {
     pub root: i128,
     pub amount: u32,
-    pub file_hashes: Vec<String>,
 }
 
 #[contracttype]

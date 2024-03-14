@@ -5,11 +5,8 @@ const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
 #[contracttype]
 #[derive(Clone)]
 pub struct TokenOrderInfo {
-    pub invoice_num: i128,
-    pub po_num: i128,
     pub buyer_address: Address,
     pub total_amount: u32,
-    pub start_time: u64,
     pub end_time: u64,
 }
 
@@ -40,30 +37,14 @@ impl OrderInfoUtils {
     }
 }
 
-pub fn write_order_info(
-    env: &Env,
-    invoice_num: i128,
-    po_num: i128,
-    buyer_address: Address,
-    total_amount: u32,
-    start_time: u64,
-    end_time: u64,
-) {
+pub fn write_order_info(env: &Env, buyer_address: Address, total_amount: u32, end_time: u64) {
     let util = OrderInfoUtils::new(env);
     let order_info = TokenOrderInfo {
-        invoice_num,
-        po_num,
         buyer_address,
         total_amount,
-        start_time,
         end_time,
     };
     util.set_order_info(&order_info);
-}
-
-pub fn read_invoice_num(env: &Env) -> i128 {
-    let util = OrderInfoUtils::new(env);
-    util.get_order_info().invoice_num
 }
 
 pub fn read_total_amount(env: &Env) -> u32 {

@@ -4,7 +4,7 @@ use crate::event;
 use crate::order_info::read_end_time;
 use crate::owner::{read_owner, write_owner};
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use crate::sub_nft::read_sub_nft;
+use crate::sub_tc::read_sub_tc;
 use soroban_sdk::Env;
 
 pub fn update_and_read_expired(env: &Env) -> bool {
@@ -16,12 +16,12 @@ pub fn update_and_read_expired(env: &Env) -> bool {
     let expired = ledger.timestamp() >= read_end_time(&env);
     if expired {
         write_expired(&env, true);
-        // transfer unclaimed NFTs to the root NFT's owner address
+        // transfer unclaimed TCs to the root TC's owner address
         let last_id = read_supply(&env);
         if last_id > 0 {
             let contract_addr = &env.current_contract_address();
             for i in 1..last_id {
-                let parent_id = read_sub_nft(&env, i).root;
+                let parent_id = read_sub_tc(&env, i).root;
                 let to = read_owner(&env, parent_id);
                 let owner = read_owner(&env, i);
                 if owner == contract_addr.clone() {

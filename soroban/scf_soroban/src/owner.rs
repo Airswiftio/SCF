@@ -1,8 +1,8 @@
 use crate::balance::read_supply;
 use crate::errors::Error;
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use crate::sub_nft::read_sub_nft_disabled;
-use soroban_sdk::{panic_with_error, Address, Env, Vec};
+use crate::sub_tc::read_sub_tc_disabled;
+use soroban_sdk::{panic_with_error, Address, Env, String, Vec};
 
 pub fn read_owner(env: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
@@ -62,10 +62,33 @@ pub fn read_all_owned(env: &Env, address: Address) -> Vec<i128> {
     if supply > 0 {
         for n in 0..supply {
             let owner = read_owner(&env, n);
-            if owner == address && !read_sub_nft_disabled(&env, n) {
+            if owner == address && !read_sub_tc_disabled(&env, n) {
                 ids.push_back(n);
             }
         }
     }
     ids
+}
+
+pub fn write_vc(env: &Env, id: i128, vc: String) {
+    let key = DataKey::VC(id);
+    env.storage().persistent().set(&key, &vc);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+}
+
+pub fn read_vc(env: &Env, id: i128) -> String {
+    let key = DataKey::VC(id);
+    match env.storage().persistent().get::<DataKey, String>(&key) {
+        Some(data) => {
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
+            data
+        }
+        None => panic_with_error!(env, Error::NotFound),
+    }
 }

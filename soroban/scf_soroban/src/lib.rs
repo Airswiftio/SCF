@@ -12,8 +12,8 @@ mod order_info;
 mod order_state;
 mod owner;
 mod storage_types;
-mod sub_nft;
+mod sub_tc;
 mod test;
 mod test_util;
 
-pub use crate::contract::NonFungibleTokenClient;
+pub use crate::contract::TokenizedCertificate;

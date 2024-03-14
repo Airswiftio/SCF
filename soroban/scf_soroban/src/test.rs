@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::contract::{NonFungibleToken, NonFungibleTokenClient};
+use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
 
 use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
@@ -13,26 +13,15 @@ use soroban_sdk::{
 #[test]
 fn test_initialize() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, NonFungibleToken);
-    let client = NonFungibleTokenClient::new(&env, &contract_id);
+    let contract_id = env.register_contract(None, TokenizedCertificate);
+    let client = TokenizedCertificateClient::new(&env, &contract_id);
 
     let admin = Address::generate(&env);
-    let invoice_num = 12345678;
-    let po_num = 1;
     let buyer = Address::generate(&env);
     let total_amount: u32 = 1000000;
-    let start_time = 1640995200; // 2022-01-01 00:00:00 UTC+0
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
 
-    client.initialize(
-        &admin,
-        &invoice_num,
-        &po_num,
-        &buyer,
-        &total_amount,
-        &start_time,
-        &end_time,
-    );
+    client.initialize(&admin, &buyer, &total_amount, &end_time);
     assert_eq!(admin, client.admin());
     // TODO: getters for other fields?
 }
@@ -46,26 +35,12 @@ fn test_mint_original() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(
-        &to,
-        &vec![
-            &env,
-            String::from_str(&env, "a"),
-            String::from_str(&env, "b"),
-        ],
-    );
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
     assert_eq!(1000000, client.amount(&0));
     assert_eq!(0, client.parent(&0));
     assert_eq!(false, client.is_disabled(&0));
-    assert_eq!(
-        vec![
-            &env,
-            String::from_str(&env, "a"),
-            String::from_str(&env, "b"),
-        ],
-        client.data(&0)
-    );
+    assert_eq!(String::from_str(&env, "a"), client.vc(&0));
 }
 
 #[test]
@@ -78,10 +53,10 @@ fn test_mint_original_twice() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
-    client.mint_original(&to, &vec![&env]); // should panic
+    client.mint_original(&to, &String::from_str(&env, "a")); // should panic
 }
 
 #[test]
@@ -93,7 +68,7 @@ fn test_split() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -111,22 +86,22 @@ fn test_split() {
         ],
     );
 
-    client.set_nft_data(&1, &vec![&env, String::from_str(&env, "b")]);
+    client.set_vc(&1, &String::from_str(&env, "b"));
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
-    assert_eq!(vec![&env, String::from_str(&env, "b")], client.data(&1));
+    assert_eq!(String::from_str(&env, "b"), client.vc(&1));
 
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
-    assert_eq!(vec![&env], client.data(&2));
+    assert!(client.try_vc(&2).is_err());
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
     assert_eq!(0, client.parent(&3));
-    assert_eq!(vec![&env], client.data(&3));
+    assert!(client.try_vc(&3).is_err());
 
     assert_eq!(true, client.is_disabled(&0));
 }
@@ -140,7 +115,7 @@ fn test_split_nested() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -186,7 +161,7 @@ fn test_split_twice() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     client.split(
         &0,
         &vec![
@@ -219,7 +194,7 @@ fn test_split_exceed() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -248,7 +223,7 @@ fn test_split_empty() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     client.split(&0, &vec![&env]);
 }
 
@@ -262,7 +237,7 @@ fn test_transfer() {
 
     let acc1 = Address::generate(&env);
     let acc2 = Address::generate(&env);
-    client.mint_original(&acc1, &vec![&env]);
+    client.mint_original(&acc1, &String::from_str(&env, "a"));
     assert_eq!(acc1, client.owner(&0));
 
     client.transfer(&acc1, &acc2, &0);
@@ -277,7 +252,7 @@ fn test_burn() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
-    client.mint_original(&admin, &vec![&env]);
+    client.mint_original(&admin, &String::from_str(&env, "a"));
     let res = client.try_owner(&0);
     assert_eq!(res.is_ok(), true);
 
@@ -331,7 +306,7 @@ fn test_expire_auto_transfer() {
     let to = Address::generate(&env);
     let to2 = Address::generate(&env);
     let to3 = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     client.split(
@@ -394,7 +369,7 @@ fn test_redeem() {
     ext_client.mock_all_auths_allowing_non_root_auth();
 
     let supplier = Address::generate(&env);
-    client.mint_original(&supplier, &vec![&env]);
+    client.mint_original(&supplier, &String::from_str(&env, "a"));
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
@@ -413,7 +388,7 @@ fn test_redeem() {
     // check balance was transferred
     assert_eq!(ext_client.balance(&supplier), 10000000000000);
 
-    // check NFT was burned
+    // check TC was burned
     assert_eq!(client.try_owner(&0).is_err(), true)
 }
 
@@ -426,7 +401,7 @@ fn test_sign_off() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     let to = Address::generate(&env);
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
     let split_req = SplitRequest {
@@ -451,7 +426,7 @@ fn test_get_all_owned() {
     let to = Address::generate(&env);
     assert_eq!(vec![&env], client.get_all_owned(&to));
 
-    client.mint_original(&to, &vec![&env]);
+    client.mint_original(&to, &String::from_str(&env, "a"));
 
     assert_eq!(vec![&env, 0], client.get_all_owned(&to));
 
