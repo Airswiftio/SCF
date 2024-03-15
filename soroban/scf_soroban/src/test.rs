@@ -40,7 +40,7 @@ fn test_mint_original() {
     assert_eq!(1000000, client.amount(&0));
     assert_eq!(0, client.parent(&0));
     assert_eq!(false, client.is_disabled(&0));
-    assert_eq!(String::from_str(&env, "a"), client.vc(&0));
+    assert_eq!(vec![&env, String::from_str(&env, "a")], client.vc(&0));
 }
 
 #[test]
@@ -86,22 +86,31 @@ fn test_split() {
         ],
     );
 
-    client.set_vc(&1, &String::from_str(&env, "b"));
+    client.add_vc(&1, &String::from_str(&env, "b"));
+    client.add_vc(&3, &String::from_str(&env, "c"));
+    client.add_vc(&3, &String::from_str(&env, "d"));
 
     assert_eq!(300000, client.amount(&1));
     assert_eq!(client.address, client.owner(&1));
     assert_eq!(0, client.parent(&1));
-    assert_eq!(String::from_str(&env, "b"), client.vc(&1));
+    assert_eq!(vec![&env, String::from_str(&env, "b")], client.vc(&1));
 
     assert_eq!(500000, client.amount(&2));
     assert_eq!(client.address, client.owner(&2));
     assert_eq!(0, client.parent(&2));
-    assert!(client.try_vc(&2).is_err());
+    assert_eq!(vec![&env], client.vc(&2));
 
     assert_eq!(200000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
     assert_eq!(0, client.parent(&3));
-    assert!(client.try_vc(&3).is_err());
+    assert_eq!(
+        vec![
+            &env,
+            String::from_str(&env, "c"),
+            String::from_str(&env, "d")
+        ],
+        client.vc(&3)
+    );
 
     assert_eq!(true, client.is_disabled(&0));
 }

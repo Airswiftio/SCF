@@ -70,7 +70,7 @@ pub fn read_all_owned(env: &Env, address: Address) -> Vec<i128> {
     ids
 }
 
-pub fn write_vc(env: &Env, id: i128, vc: String) {
+pub fn write_vc(env: &Env, id: i128, vc: Vec<String>) {
     let key = DataKey::VC(id);
     env.storage().persistent().set(&key, &vc);
     env.storage()
@@ -78,9 +78,34 @@ pub fn write_vc(env: &Env, id: i128, vc: String) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn read_vc(env: &Env, id: i128) -> String {
+pub fn add_vc(env: &Env, id: i128, vc: String) {
     let key = DataKey::VC(id);
-    match env.storage().persistent().get::<DataKey, String>(&key) {
+    match env.storage().persistent().get::<DataKey, Vec<String>>(&key) {
+        Some(mut vcs) => {
+            vcs.push_back(vc);
+            env.storage().persistent().set(&key, &vcs);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
+        }
+        None => {
+            let mut new_vcs = Vec::new(&env);
+            new_vcs.push_back(vc);
+            env.storage().persistent().set(&key, &new_vcs);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
+        }
+    }
+}
+
+pub fn read_vc(env: &Env, id: i128) -> Vec<String> {
+    let key = DataKey::VC(id);
+    match env.storage().persistent().get::<DataKey, Vec<String>>(&key) {
         Some(data) => {
             env.storage().persistent().extend_ttl(
                 &key,

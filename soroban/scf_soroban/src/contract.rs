@@ -8,12 +8,14 @@ use crate::metadata::{read_external_token, write_external_token};
 use crate::order_info::{read_buyer_address, read_total_amount, write_order_info};
 use crate::order_state::{read_paid, update_and_read_expired, write_paid};
 use crate::owner::{
-    check_owner, read_all_owned, read_owner, read_recipient, read_vc, write_owner, write_recipient,
-    write_vc,
+    add_vc, check_owner, read_all_owned, read_owner, read_recipient, read_vc, write_owner,
+    write_recipient, write_vc,
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use crate::sub_tc::{read_sub_tc, read_sub_tc_disabled, write_sub_tc, write_sub_tc_disabled};
-use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String, Vec};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, token, vec, Address, Env, String, Vec,
+};
 
 #[contract]
 pub struct TokenizedCertificate;
@@ -113,7 +115,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         read_owner(&env, id)
     }
 
-    fn vc(env: Env, id: i128) -> String {
+    fn vc(env: Env, id: i128) -> Vec<String> {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -181,7 +183,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let amount = read_total_amount(&env);
         write_owner(&env, id, Some(to.clone()));
         write_sub_tc(&env, id, id, amount);
-        write_vc(&env, id, vc);
+        write_vc(&env, id, vec![&env, vc]);
         write_sub_tc_disabled(&env, id, false);
         increment_supply(&env);
 
@@ -237,6 +239,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             write_sub_tc_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
+            write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
             new_ids.push_back(new_id);
             remaining -= req.amount;
@@ -248,6 +251,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             write_sub_tc(&env, new_id, id, remaining);
             write_sub_tc_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(owner.clone()));
+            write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
             new_ids.push_back(new_id);
         }
@@ -355,13 +359,13 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         write_paid(&env, true);
     }
 
-    fn set_vc(env: Env, id: i128, vc: String) {
+    fn add_vc(env: Env, id: i128, vc: String) {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
-        write_vc(&env, id, vc);
+        add_vc(&env, id, vc);
     }
 }

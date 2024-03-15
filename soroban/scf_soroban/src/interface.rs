@@ -42,7 +42,7 @@ pub trait TokenizedCertificateTrait {
     fn owner(env: Env, id: i128) -> Address;
 
     /// Get the vc associated with "id".
-    fn vc(env: Env, id: i128) -> String;
+    fn vc(env: Env, id: i128) -> Vec<String>;
 
     /// Get all TC ids owned by address
     fn get_all_owned(env: Env, address: Address) -> Vec<i128>;
@@ -91,7 +91,7 @@ pub trait TokenizedCertificateTrait {
     fn pay_off(env: Env, from: Address);
 
     /// Update the VC associated with a token. Can only be called by the admin.
-    fn set_vc(env: Env, id: i128, vc: String);
+    fn add_vc(env: Env, id: i128, vc: String);
 
     // --------------------------------------------------------------------------------
     // Implementation Interface
