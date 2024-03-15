@@ -6,7 +6,7 @@ use crate::offer::{change_offer, check_offer, read_offer, write_offer};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 use soroban_sdk::{contract, contractimpl, token, Address, Env};
 
-mod nft {
+mod tc {
     soroban_sdk::contractimport!(
         file = "../scf_soroban/target/wasm32-unknown-unknown/release/scf_soroban.wasm"
     );
@@ -19,8 +19,8 @@ pub trait OfferPoolTrait {
         from: Address,
         offer_id: i128,
         amount: i128,
-        nft_contract: Address,
-        nft_id: i128,
+        tc_contract: Address,
+        tc_id: i128,
     ) -> Result<bool, Error>;
     fn expire_offer(e: Env, from: Address, offer_id: i128) -> Result<bool, Error>;
     fn get_offer(e: Env, offer_id: i128) -> Result<Offer, Error>;
@@ -44,14 +44,14 @@ impl OfferPoolTrait for OfferPool {
         }
     }
 
-    /// Creates an offer pointing to a specific NFT.
+    /// Creates an offer pointing to a specific TC.
     fn create_offer(
         e: Env,
         from: Address,
         offer_id: i128,
         amount: i128,
-        nft_contract: Address,
-        nft_id: i128,
+        tc_contract: Address,
+        tc_id: i128,
     ) -> Result<bool, Error> {
         if check_offer(&e, offer_id) {
             Err(Error::OfferExist)
@@ -63,7 +63,7 @@ impl OfferPoolTrait for OfferPool {
             let token_client = token::Client::new(&e, &get_token(&e));
             from.require_auth();
             token_client.transfer(&from, &e.current_contract_address(), &amount);
-            write_offer(&e, offer_id, from, amount, nft_contract, nft_id);
+            write_offer(&e, offer_id, from, amount, tc_contract, tc_id);
             Ok(true)
         }
     }
@@ -110,7 +110,7 @@ impl OfferPoolTrait for OfferPool {
         }
     }
 
-    // On accepting an offer, the offered amount in tokens is transferred from to contract address to 'to' and the NFT is transferred to the offer creator.
+    // On accepting an offer, the offered amount in tokens is transferred from to contract address to 'to' and the TC is transferred to the offer creator.
     fn accept_offer(e: Env, to: Address, offer_id: i128) -> Result<bool, Error> {
         e.storage()
             .instance()
@@ -123,14 +123,14 @@ impl OfferPoolTrait for OfferPool {
                 }
                 let from = x.from;
                 let amount = x.amount;
-                let nft_contract = x.nft_contract;
-                let nft_id = x.nft_id;
+                let tc_contract = x.tc_contract;
+                let tc_id = x.tc_id;
 
                 let token_client = token::Client::new(&e, &get_token(&e));
-                let nft_client = nft::Client::new(&e, &nft_contract);
+                let tc_client = tc::Client::new(&e, &tc_contract);
 
                 to.require_auth();
-                nft_client.transfer(&to, &from, &nft_id);
+                tc_client.transfer(&to, &from, &tc_id);
 
                 token_client.transfer(&e.current_contract_address(), &to, &amount);
 

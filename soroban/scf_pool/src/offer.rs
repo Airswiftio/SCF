@@ -23,14 +23,14 @@ pub fn write_offer(
     offer_id: i128,
     from: Address,
     amount: i128,
-    nft_contract: Address,
-    nft_id: i128,
+    tc_contract: Address,
+    tc_id: i128,
 ) {
     let input_offer = Offer {
         from: from,
         amount: amount,
-        nft_contract: nft_contract,
-        nft_id: nft_id,
+        tc_contract,
+        tc_id,
         status: 0,
     };
     let key = DataKey::Offer(offer_id);

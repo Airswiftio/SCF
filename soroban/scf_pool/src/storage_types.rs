@@ -12,8 +12,8 @@ pub(crate) const OFFER_LIFETIME_THRESHOLD: u32 = OFFER_BUMP_AMOUNT - DAY_IN_LEDG
 pub struct Offer {
     pub from: Address,
     pub amount: i128,
-    pub nft_contract: Address,
-    pub nft_id:i128,
+    pub tc_contract: Address,
+    pub tc_id: i128,
     pub status: i128,
 }
 // pub struct OfferID {
