@@ -4,7 +4,6 @@ use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
 use crate::storage_types::SplitRequest;
 use crate::test_util::setup_test_token;
 use soroban_sdk::testutils::Ledger;
-use soroban_sdk::Vec;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, token::StellarAssetClient, vec, Address,
     Env, String,

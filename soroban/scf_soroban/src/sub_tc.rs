@@ -1,6 +1,6 @@
 use crate::errors::Error;
 use crate::storage_types::{DataKey, SubTC, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use soroban_sdk::{panic_with_error, Env, String, Vec};
+use soroban_sdk::{panic_with_error, Env};
 
 pub fn read_sub_tc(env: &Env, id: i128) -> SubTC {
     let key = DataKey::SubTCInfo(id);
