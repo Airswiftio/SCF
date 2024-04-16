@@ -60,12 +60,15 @@ pub trait TokenizedCertificateTrait {
 
     /// Mint the root-level TC. Will fail if the root-level TC already exists.
     /// The minted TC has a value corresponding to the "total_amount" specified in the initialize() function.
+    /// Emit event with topics = ["mint", to: Address], data = [id: i128]
     fn mint_original(env: Env, to: Address, vc: String);
 
     /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
+    /// Emit event with topics = ["split", from: Address], data = [id: i128, new_ids: Vec<i128>]
     fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128>;
 
     /// Burn a specified TC and transfer funds to the owner.
+    /// Emit event with topics = ["burn", owner: Address], data = [id: i128]
     fn redeem(env: Env, id: i128);
 
     /// If "admin" is the administrator or the token owner, burn token "id" from "from".
@@ -85,6 +88,8 @@ pub trait TokenizedCertificateTrait {
     fn recipient(env: Env, id: i128) -> Address;
 
     /// approve and receive the TC according to SplitRequest for "id"
+    /// transfers the TC from the smart contract to the intended recipient
+    /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
     fn sign_off(env: Env, id: i128);
 
     /// pay off OrderInfo.amount using token
