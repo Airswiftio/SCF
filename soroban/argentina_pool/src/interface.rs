@@ -54,7 +54,7 @@ pub trait LiquidityPoolTrait {
     /// The loan offer must be accepted prior to this step.
     fn payoff_loan(e: Env, from: Address, offer_id: i128);
 
-    /// Close a loan by returning the TC to the creditor to the borrower, then sending the liquidity tokens from the smart contract back to the creditor.
+    /// Close a loan by returning the TC from the creditor to the borrower, then sending the liquidity tokens from the smart contract back to the creditor.
     /// Payoff must be completed prior to this step.
     fn close_loan(e: Env, from: Address, offer_id: i128);
 

@@ -17,6 +17,9 @@ pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
 
     /// Admin calls this function. Minted TC belongs to contract.
+    /// "amount" is the value of the TC in terms of ext_token.
+    /// redeem_time is a Unix timestamp representing the date after which the TC can be redeemed.
+    /// file_hashes contains the hashes of each relevant file uploaded when creating the order on the platform's backend.
     /// Emit event with topics = ["mint", to: Address], data = [id: i128]
     fn mint(e: Env, amount: u32, redeem_time: u64, file_hashes: Vec<String>) -> i128;
 
