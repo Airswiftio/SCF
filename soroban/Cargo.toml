@@ -1,0 +1,10 @@
+[workspace]
+
+members = [
+    "argentina_pledge",
+    "argentina_pool",
+    "contract_deployer",
+    "scf_pool",
+    "scf_soroban",
+    "token"
+]
