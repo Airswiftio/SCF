@@ -16,14 +16,24 @@ pub struct Offer {
     pub tc_id: i128,
     pub status: i128,
 }
-// pub struct OfferID {
-//     pub from: str,
-// }
+
+#[derive(Clone)]
+#[contracttype]
+pub struct TokenInfo {
+    pub address: Address,
+    pub decimals: u32,
+    // pub rate: i128,
+}
+
+
 
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
     Offer(i128),
-    TokenContract,
+    ExtToken,
+    // the token rate for the ExtToken to PoolToken: 1 PoolToken = rate*ExtToken  
+    // ExtTokenRate(Address),
+    PoolToken,
     Admin,
 }
