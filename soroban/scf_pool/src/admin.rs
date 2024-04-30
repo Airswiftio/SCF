@@ -1,6 +1,6 @@
 use soroban_sdk::{Address, Env};
 
-use crate::storage_types::DataKey;
+use crate::storage_types::{DataKey, TokenInfo};
 
 pub fn has_administrator(e: &Env) -> bool {
     let key = DataKey::Admin;
@@ -17,12 +17,12 @@ pub fn write_administrator(e: &Env, id: &Address) {
     e.storage().instance().set(&key, id);
 }
 
-pub fn get_token(e: &Env) -> Address {
-    let key = DataKey::TokenContract;
+pub fn get_pool_token(e: &Env) -> TokenInfo {
+    let key = DataKey::PoolToken;
     e.storage().instance().get(&key).unwrap()
 }
 
-pub fn write_token(e: &Env, token: &Address) {
-    let key = DataKey::TokenContract;
+pub fn write_pool_token(e: &Env, token: &TokenInfo) {
+    let key = DataKey::PoolToken;
     e.storage().instance().set(&key, token);
 }

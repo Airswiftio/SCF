@@ -7,18 +7,29 @@ mod tc_contract {
 }
 
 use crate::contract::{OfferPool, OfferPoolClient};
-use soroban_sdk::{testutils::BytesN as _, token, Address, BytesN, Env};
+use soroban_sdk::{testutils::BytesN as _, token::{self, TokenClient}, Address, BytesN, Env};
 
 pub fn setup_pool<'a>(
     e: &Env,
     admin: &Address,
     ext_token_address: &Address,
-) -> OfferPoolClient<'a> {
+    ext_token_decimals: &u32,
+) -> (OfferPoolClient<'a>, TokenClient<'a>) {
     let contract_id = e.register_contract(None, OfferPool);
     let client = OfferPoolClient::new(e, &contract_id);
+    let wasm_hash = install_token_wasm(e);
 
-    client.initialize(admin, ext_token_address);
-    client
+    client.initialize(admin, &wasm_hash, ext_token_address, ext_token_decimals);
+
+    let lpToken= token::Client::new(&e, &client.get_liquidity_token());
+    (client, lpToken)
+}
+
+pub fn install_token_wasm(e: &Env) -> BytesN<32> {
+    soroban_sdk::contractimport!(
+        file = "../token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
+    );
+    e.deployer().upload_contract_wasm(WASM)
 }
 
 pub fn setup_test_token<'a>(
