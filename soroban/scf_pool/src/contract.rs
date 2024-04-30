@@ -4,6 +4,7 @@ use crate::offer::{change_offer, check_offer, read_offer, write_offer};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD, TokenInfo};
 use crate::pool_token::{create_contract, read_pool_token, write_pool_token};
 use crate::ext_token::{self, read_ext_token, write_ext_token};
+use crate::interface::{OfferPoolTrait};
 
 use soroban_sdk::{ contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Symbol, Val,};
 
@@ -13,34 +14,6 @@ mod tc {
     );
 }
 
-pub trait OfferPoolTrait {
-    fn initialize(
-        e: Env,
-        admin: Address,
-        token_wasm_hash: BytesN<32>,
-        ext_token_address: Address,
-        ext_token_decimals: u32,
-    );
-    fn deposit(e: Env, from: Address, amount: i128);
-    fn withdraw(e: Env, from: Address, amount: i128);
-
-    fn create_offer(
-        e: Env,
-        from: Address,
-        offer_id: i128,
-        amount: i128,
-        tc_contract: Address,
-        tc_id: i128,
-    );
-    fn expire_offer(e: Env, from: Address, offer_id: i128);
-    fn accept_offer(e: Env, token: Address, offer_id: i128);
-    fn get_offer(e: Env, offer_id: i128) -> Offer;
-    fn get_liquidity_token(e: Env) -> Address;
-    fn get_ext_token(e: Env) -> (Address, u32);
-
-
-    // fn approve_offer(e: Env, admin: Address);
-}
 
 #[contract]
 pub struct OfferPool;
