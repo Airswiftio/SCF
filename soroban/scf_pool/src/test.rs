@@ -2,8 +2,11 @@
 use crate::test_util::{setup_pool, setup_tc, setup_test_token, install_token_wasm};
 use crate::contract::{OfferPool, OfferPoolClient};
 use crate::error::{Error as ContractError};
-use soroban_sdk::{testutils::Address as _, Address, Env, String, token, Error};
+use soroban_sdk::events::Topics;
+use soroban_sdk::{symbol_short, vec, IntoVal};
+use soroban_sdk::{testutils::Address as _, Address, Env, String, token, Error, testutils::Events, log};
 
+extern crate std;
 
 #[test]
 #[should_panic(expected = "Error(Contract, #1)")]
@@ -12,7 +15,7 @@ fn test_get_offer_nonexistent() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    let (pool_client,_) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let (pool_client,_,_) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
     let offer_id = 1;
     pool_client.get_offer(&offer_id);
@@ -71,7 +74,7 @@ fn test_deposit() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let (client, liquidity_token_client,contract_id) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
     let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
@@ -81,6 +84,17 @@ fn test_deposit() {
         liquidity_token_client.balance(&user.clone()),
         600000
     );
+
+    match e.events().all().last() {
+            Some((contract_address,topics,data)) => {
+                assert_eq!( contract_address, contract_id.clone());
+                assert_eq!( topics, (symbol_short!("deposit"), user).into_val(&e));
+                let data_decoded:i128 = data.into_val(&e);
+                assert_eq!( data_decoded, 600000);
+            },
+            None => panic!("the event is not published"),
+    }
+
 }
 
 #[test]
@@ -89,7 +103,7 @@ fn test_deposit_invalid_balance() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let (client, liquidity_token_client,_) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
     let user = Address::generate(&e);
     let res = client.try_deposit(&user.clone(), &1);
@@ -102,7 +116,7 @@ fn test_withdraw() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let (client, liquidity_token_client,contract_id) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
     let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
@@ -114,6 +128,16 @@ fn test_withdraw() {
         liquidity_token_client.balance(&user.clone()),
         500000
     );
+
+    match e.events().all().last() {
+        Some((contract_address,topics,data)) => {
+            assert_eq!( contract_address, contract_id.clone());
+            assert_eq!( topics, (symbol_short!("withdraw"), user).into_val(&e));
+            let data_decoded:i128 = data.into_val(&e);
+            assert_eq!( data_decoded, 100000);
+        },
+        None => panic!("the event is not published"),
+    }
 }
 
 #[test]
@@ -122,7 +146,7 @@ fn test_withdraw_invalid_balance() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let (client, liquidity_token_client,_) = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
 
     let user = Address::generate(&e);
     token_admin_client.mint(&user.clone(), &1000000);
@@ -139,7 +163,7 @@ fn test_create_offer() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, contract_id) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -161,6 +185,17 @@ fn test_create_offer() {
     let offer_id = 1;
 
     pool_client.create_offer(&offerer, &offer_id, &600000, &tc_client.address, &1);
+
+    match e.events().all().last() {
+        Some((contract_address,topics,data)) => {
+            assert_eq!( contract_address, contract_id.clone());
+            assert_eq!( topics, (symbol_short!("create"), offerer.clone() ,600000i128 ).into_val(&e));
+            let data_decoded:i128 = data.into_val(&e);
+            assert_eq!( data_decoded, 1);
+        },
+        None => panic!("the event is not published"),
+    }
+
     let offer = pool_client.get_offer(&offer_id);
     //test offer information
     assert_eq!(offer.from, offerer);
@@ -182,7 +217,7 @@ fn test_create_offer_insufficient_balance() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, _) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -215,7 +250,7 @@ fn test_create_offer_duplicate() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, _) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -251,7 +286,7 @@ fn test_accept_offer() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, contract_id) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -273,6 +308,17 @@ fn test_accept_offer() {
     let offer_id = 1;
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &0);
     pool_client.accept_offer(&buyer, &offer_id);
+
+    match e.events().all().last() {
+        Some((contract_address,topics,data)) => {
+            assert_eq!( contract_address, contract_id.clone());
+            assert_eq!( topics, (symbol_short!("accept"), buyer.clone()).into_val(&e));
+            let data_decoded:i128 = data.into_val(&e);
+            assert_eq!( data_decoded, offer_id);
+        },
+        None => panic!("the event is not published"),
+    }
+
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 2);
     assert_eq!(liquidity_token_client.balance(&buyer),1000000)
@@ -284,7 +330,7 @@ fn test_accept_offer_nonexistent_offer() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    let (pool_client,_) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client,_,_) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
 
     let res=pool_client.try_accept_offer(&admin, &123);
     assert_eq!(res, Err(Ok(Error::from_contract_error(
@@ -302,7 +348,7 @@ fn test_accept_offer_nonexistent_tc() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client,_) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -331,7 +377,7 @@ fn test_accept_offer_not_tc_owner() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+let (pool_client, liquidity_token_client,_) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -365,7 +411,7 @@ fn test_expire_accepted_offer() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+let (pool_client, liquidity_token_client,_) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -401,7 +447,7 @@ fn test_expire_offer_nonexistent() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+let (pool_client, liquidity_token_client, _) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
 
     pool_client.expire_offer(&admin, &123);
 }
@@ -414,7 +460,7 @@ fn test_expire_offer_as_admin() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+let (pool_client, liquidity_token_client, _) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -431,6 +477,9 @@ let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client
     let offer_id = 1;
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &1);
     pool_client.expire_offer(&admin, &offer_id);
+
+    
+
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 1);
 }
@@ -443,7 +492,7 @@ fn test_expire_offer_as_owner() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, contract_id) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -460,6 +509,22 @@ let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client
     let offer_id = 1;
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &1);
     pool_client.expire_offer(&offerer, &offer_id);
+
+    //test for the event 
+    //get the latest event 
+    match e.events().all().last() {
+        Some((contract_address,topics,data)) => {
+            //test the event contract address
+            assert_eq!( contract_address, contract_id.clone());
+            //test the event topics
+            assert_eq!( topics, (symbol_short!("expire"), offerer.clone()).into_val(&e));
+            //test the event data
+            let data_decoded:i128 = data.into_val(&e);
+            assert_eq!( data_decoded, offer_id);
+        },
+        None => panic!("the event is not published"),
+    }
+
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 1);
 }
@@ -473,7 +538,7 @@ fn test_expire_offer_not_owned() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+let (pool_client, liquidity_token_client, contract_id) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,
@@ -491,6 +556,22 @@ let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client
     let other_user = Address::generate(&e);
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &1);
     pool_client.expire_offer(&other_user, &offer_id);
+
+        //test for the event 
+    //get the latest event 
+    match e.events().all().last() {
+        Some((contract_address,topics,data)) => {
+            //test the event contract address
+            assert_eq!( contract_address, contract_id.clone());
+            //test the event topics
+            assert_eq!( topics, (symbol_short!("accept"), offerer.clone()).into_val(&e));
+            //test the event data
+            let data_decoded:i128 = data.into_val(&e);
+            assert_eq!( data_decoded, offer_id);
+        },
+        None => panic!("the event is not published"),
+    }
+
 }
 
 #[test]
@@ -502,7 +583,7 @@ fn test_accept_expired_offer() {
     let buyer = Address::generate(&e);
     let offerer = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, liquidity_token_client) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
+    let (pool_client, liquidity_token_client, _) = setup_pool(&e, &admin, &token_client.address,&token_client.decimals());
     let tc_client = setup_tc(
         &e,
         &admin,

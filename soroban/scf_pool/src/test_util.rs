@@ -14,7 +14,7 @@ pub fn setup_pool<'a>(
     admin: &Address,
     ext_token_address: &Address,
     ext_token_decimals: &u32,
-) -> (OfferPoolClient<'a>, TokenClient<'a>) {
+) -> (OfferPoolClient<'a>, TokenClient<'a>, Address) {
     let contract_id = e.register_contract(None, OfferPool);
     let client = OfferPoolClient::new(e, &contract_id);
     let wasm_hash = install_token_wasm(e);
@@ -22,7 +22,7 @@ pub fn setup_pool<'a>(
     client.initialize(admin, &wasm_hash, ext_token_address, ext_token_decimals);
 
     let lpToken= token::Client::new(&e, &client.get_liquidity_token());
-    (client, lpToken)
+    (client, lpToken, contract_id)
 }
 
 pub fn install_token_wasm(e: &Env) -> BytesN<32> {

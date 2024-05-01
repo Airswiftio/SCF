@@ -10,5 +10,6 @@ mod test_util;
 mod pool_token;
 mod ext_token;
 mod interface;
+mod event;
 
 pub use crate::contract::OfferPoolClient;

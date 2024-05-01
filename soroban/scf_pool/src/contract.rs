@@ -5,6 +5,7 @@ use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESH
 use crate::pool_token::{create_contract, read_pool_token, write_pool_token};
 use crate::ext_token::{self, read_ext_token, write_ext_token};
 use crate::interface::{OfferPoolTrait};
+use crate::event;
 
 use soroban_sdk::{ contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Symbol, Val,};
 
@@ -74,6 +75,7 @@ impl OfferPoolTrait for OfferPool {
 
         //Mint the equal amount number of liquidity tokens to from
         token::StellarAssetClient::new(&e, &read_pool_token(&e).address).mint(&from,&amount);
+        event::deposit(&e, from, amount);
     }
 
     fn withdraw(e: Env, from: Address, amount: i128) {
@@ -91,6 +93,7 @@ impl OfferPoolTrait for OfferPool {
             &from,
             &amount,
         );
+        event::withdraw(&e, from, amount);
     }
     /// Creates an offer pointing to a specific TC.
     fn create_offer(
@@ -112,7 +115,8 @@ impl OfferPoolTrait for OfferPool {
             let token_client = token::Client::new(&e, &pool_token.address);
             from.require_auth();
             token_client.transfer(&from, &e.current_contract_address(), &amount);
-            write_offer(&e, offer_id, from, amount, tc_contract, tc_id);
+            write_offer(&e, offer_id, from.clone(), amount, tc_contract, tc_id);
+            event::create_offer(&e, from, offer_id, amount );
         }
     }
 
@@ -142,6 +146,7 @@ impl OfferPoolTrait for OfferPool {
 
                 token_client.transfer(&e.current_contract_address(), &offer_from, &amount);
                 change_offer(&e, offer_id, 1);
+                event::expire_offer(&e, from, offer_id);
             }
             None => panic_with_error!(&e, Error::OfferEmpty),
         }
@@ -184,6 +189,7 @@ impl OfferPoolTrait for OfferPool {
                 token_client.transfer(&e.current_contract_address(), &to, &amount);
 
                 change_offer(&e, offer_id, 2);
+                event::accept_offer(&e, to, offer_id);
             }
             None => panic_with_error!(&e,Error::OfferEmpty),
         }
