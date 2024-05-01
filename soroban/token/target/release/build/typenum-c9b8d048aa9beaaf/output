@@ -1,0 +1,3 @@
+cargo:rerun-if-changed=build/main.rs
+cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/ziyu/git/SCF/soroban/token/target/release/build/typenum-c9b8d048aa9beaaf/out/consts.rs
+cargo:rustc-env=TYPENUM_BUILD_OP=/home/ziyu/git/SCF/soroban/token/target/release/build/typenum-c9b8d048aa9beaaf/out/op.rs

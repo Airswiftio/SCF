@@ -1,0 +1,12 @@
+/home/ziyu/git/SCF/soroban/token/target/debug/deps/libthiserror_impl-8001a8cfab993415.so: /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/lib.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/ast.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/attr.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/expand.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/fmt.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/generics.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/prop.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/valid.rs
+
+/home/ziyu/git/SCF/soroban/token/target/debug/deps/thiserror_impl-8001a8cfab993415.d: /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/lib.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/ast.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/attr.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/expand.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/fmt.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/generics.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/prop.rs /home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/valid.rs
+
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/lib.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/ast.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/attr.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/expand.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/fmt.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/generics.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/prop.rs:
+/home/ziyu/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-impl-1.0.40/src/valid.rs:

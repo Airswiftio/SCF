@@ -85,15 +85,23 @@ fn test_deposit() {
         600000
     );
 
-    match e.events().all().last() {
-            Some((contract_address,topics,data)) => {
-                assert_eq!( contract_address, contract_id.clone());
-                assert_eq!( topics, (symbol_short!("deposit"), user).into_val(&e));
-                let data_decoded:i128 = data.into_val(&e);
-                assert_eq!( data_decoded, 600000);
-            },
-            None => panic!("the event is not published"),
-    }
+// Match the latest event in the event stream
+match e.events().all().last() {
+    // If there is an event
+    Some((contract_address, topics, data)) => {
+        // Assert that the contract address matches the expected contract ID
+        assert_eq!(contract_address, contract_id.clone());
+
+        // Assert that the topics match the expected values (deposit event for a specific user)
+        assert_eq!(topics, (symbol_short!("deposit"), user).into_val(&e));
+
+        // Decode the event data and assert that it matches the expected value (600000)
+        let data_decoded: i128 = data.into_val(&e);
+        assert_eq!(data_decoded, 600000);
+    },
+    // If there are no events, panic with a descriptive message
+    None => panic!("The event is not published"),
+}
 
 }
 
@@ -129,14 +137,21 @@ fn test_withdraw() {
         500000
     );
 
+    //Test for the event
+    //Get the latest event
     match e.events().all().last() {
-        Some((contract_address,topics,data)) => {
-            assert_eq!( contract_address, contract_id.clone());
-            assert_eq!( topics, (symbol_short!("withdraw"), user).into_val(&e));
-            let data_decoded:i128 = data.into_val(&e);
-            assert_eq!( data_decoded, 100000);
+        Some((contract_address, topics, data)) => {
+            // Test the event contract address
+            assert_eq!(contract_address, contract_id.clone());
+    
+            // Test the event topics
+            assert_eq!(topics, (symbol_short!("withdraw"), user).into_val(&e));
+    
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, 100000);
         },
-        None => panic!("the event is not published"),
+        None => panic!("The event is not published"),
     }
 }
 
@@ -186,14 +201,21 @@ fn test_create_offer() {
 
     pool_client.create_offer(&offerer, &offer_id, &600000, &tc_client.address, &1);
 
+    //Test for the event
+    //Get the latest event
     match e.events().all().last() {
-        Some((contract_address,topics,data)) => {
-            assert_eq!( contract_address, contract_id.clone());
-            assert_eq!( topics, (symbol_short!("create"), offerer.clone() ,600000i128 ).into_val(&e));
-            let data_decoded:i128 = data.into_val(&e);
-            assert_eq!( data_decoded, 1);
+        Some((contract_address, topics, data)) => {
+            // Test the event contract address
+            assert_eq!(contract_address, contract_id.clone());
+    
+            // Test the event topics
+            assert_eq!(topics, (symbol_short!("create"), offerer.clone(), 600000i128).into_val(&e));
+    
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, 1);
         },
-        None => panic!("the event is not published"),
+        None => panic!("The event is not published"),
     }
 
     let offer = pool_client.get_offer(&offer_id);
@@ -309,15 +331,23 @@ fn test_accept_offer() {
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &0);
     pool_client.accept_offer(&buyer, &offer_id);
 
+    //Test for the event
+    //Get the latest event
     match e.events().all().last() {
-        Some((contract_address,topics,data)) => {
-            assert_eq!( contract_address, contract_id.clone());
-            assert_eq!( topics, (symbol_short!("accept"), buyer.clone()).into_val(&e));
-            let data_decoded:i128 = data.into_val(&e);
-            assert_eq!( data_decoded, offer_id);
+        Some((contract_address, topics, data)) => {
+            // Test the event contract address
+            assert_eq!(contract_address, contract_id.clone());
+    
+            // Test the event topics
+            assert_eq!(topics, (symbol_short!("accept"), buyer.clone()).into_val(&e));
+    
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, offer_id);
         },
-        None => panic!("the event is not published"),
+        None => panic!("The event is not published"),
     }
+    
 
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 2);
@@ -557,7 +587,7 @@ let (pool_client, liquidity_token_client, contract_id) = setup_pool(&e, &admin, 
     pool_client.create_offer(&offerer, &offer_id, &1000000, &tc_client.address, &1);
     pool_client.expire_offer(&other_user, &offer_id);
 
-        //test for the event 
+    //test for the event 
     //get the latest event 
     match e.events().all().last() {
         Some((contract_address,topics,data)) => {
