@@ -3,13 +3,12 @@
 mod admin;
 mod contract;
 mod error;
+mod event;
+mod interface;
 mod offer;
+mod pool_token;
 mod storage_types;
 mod test;
 mod test_util;
-mod pool_token;
-mod ext_token;
-mod interface;
-mod event;
 
 pub use crate::contract::OfferPoolClient;
