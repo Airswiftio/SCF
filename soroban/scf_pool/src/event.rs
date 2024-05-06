@@ -1,13 +1,17 @@
-use soroban_sdk::{symbol_short,Address, Env};
+use soroban_sdk::{symbol_short, Address, Env};
 
+pub(crate) fn set_admin(e: &Env, admin: Address, new_admin: Address) {
+    let topics = (symbol_short!("set_admin"), admin);
+    e.events().publish(topics, new_admin);
+}
 
-pub fn deposit(e:&Env, from:Address, amount: i128){
-    let topics = (symbol_short!("deposit"), from);
+pub fn deposit(e: &Env, from: Address, ext_token: Address, pool_token: Address, amount: i128) {
+    let topics = (symbol_short!("deposit"), from, ext_token, pool_token);
     e.events().publish(topics, amount);
 }
 
-pub fn withdraw(e:&Env, to:Address, amount:i128){
-    let topics = (symbol_short!("withdraw"), to);
+pub fn withdraw(e: &Env, from: Address, ext_token: Address, pool_token: Address, amount: i128) {
+    let topics = (symbol_short!("withdraw"), from, ext_token, pool_token);
     e.events().publish(topics, amount);
 }
 

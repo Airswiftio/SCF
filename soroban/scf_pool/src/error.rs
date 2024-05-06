@@ -9,4 +9,6 @@ pub enum Error {
     OfferChanged = 3,
     AdminExist = 4,
     NotAuthorized = 5,
+    TokenNotSupported = 6,
+    TokenExists = 7,
 }
