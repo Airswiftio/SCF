@@ -1,10 +1,10 @@
 # Argentina Case Liquidity Pool
 
 ## Notes
-* This smart contract involves three kinds of "token" which can be somewhat confusing. 
+* This smart contract involves three kinds of "token". 
     * The "liquidity token" is used to represent funds locked into the smart contract. They are used for creating and paying off loans.
-    * The "external token" is only used to enter/exit the liquidity pool. Typically, this would be something like USDC, which could be used to easily make transactions outside of the SCF platform. 
-    * The "tokenized certificate" (TC) is a representation of an invoice on the SCF platform. It is non-fungible, and used as collateral for loans in this liquidity pool.
+    * The "external token" is only used to enter/exit the liquidity pool. Typically, this would be a stablecoin like USDC, which could be used to easily make transactions outside of the SCF platform. 
+    * The "tokenized certificate" (TC) is a token from the `argentina_pledge` smart contract which represents an invoice on the SCF platform. It is non-fungible, and used as collateral for loans in this liquidity pool.
 * A "loan" is expressed relative to the liquidity token. For example, the "creditor" is the one who gives liquidity tokens and receives a TC, while the "borrower" is the one who receives liquidity tokens in exchange for the TC. 
 
 ## Steps
