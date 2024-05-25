@@ -3,10 +3,7 @@ use crate::error::Error;
 use crate::event;
 use crate::interface::OfferPoolTrait;
 use crate::offer::{change_offer, check_offer, read_offer, write_offer};
-use crate::pool_token::{
-    add_pool_token, create_contract, get_pool_token, read_ext_token, read_pool_tokens,
-    read_wasm_hash, write_ext_token, write_wasm_hash,
-};
+use crate::pool_token::{add_pool_token, create_contract, get_pool_token, has_pool_token, read_ext_token, read_pool_tokens, read_wasm_hash, write_ext_token, write_wasm_hash};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
 use soroban_sdk::{
@@ -139,6 +136,9 @@ impl OfferPoolTrait for OfferPool {
             e.storage()
                 .instance()
                 .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+            if !has_pool_token(&e, &pool_token){
+                panic_with_error!(&e, Error::TokensNotExists);
+            }
             // Transfer the offer amount to the contract address until the offer is accepted or expired.
             let token_client = token::Client::new(&e, &pool_token);
             from.require_auth();

@@ -79,3 +79,11 @@ pub fn read_ext_token(e: &Env, pool_token: &Address) -> Address {
         None => panic_with_error!(&e, Error::TokenNotSupported),
     }
 }
+
+pub fn has_pool_token(e: &Env, pool_token: &Address) -> bool {
+    let key = ContractDataKey::ExtToken(pool_token.clone());
+    match e.storage().instance().get::<ContractDataKey, Address>(&key) {
+        Some(token) => true,
+        None => false,
+    }
+}
