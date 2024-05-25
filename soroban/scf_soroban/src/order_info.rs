@@ -1,6 +1,6 @@
 use soroban_sdk::{contracttype, symbol_short, unwrap::UnwrapOptimized, Address, Env, Symbol};
 
-const ORDERINFO_KEY: Symbol = symbol_short!("ORDERINFO");
+const ORDERINFO_KEY: Symbol = symbol_short!("");
 
 #[contracttype]
 #[derive(Clone)]

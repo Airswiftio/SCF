@@ -144,6 +144,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         update_and_read_expired(&env);
         check_owner(&env, &from, id);
         from.require_auth();
+        write_approval(&env, id, None);
         write_owner(&env, id, Some(to.clone()));
         event::transfer(&env, from, to, id);
     }
