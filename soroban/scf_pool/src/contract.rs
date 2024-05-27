@@ -141,6 +141,13 @@ impl OfferPoolTrait for OfferPool {
             }
             // Transfer the offer amount to the contract address until the offer is accepted or expired.
             let token_client = token::Client::new(&e, &pool_token);
+            let tc_client=tc::Client::new(&e, &tc_contract);
+
+            // calling the contract to check if offer is disabled
+            if !tc_client.is_disabled(&tc_id){
+                panic_with_error!(&e, Error::TCDisabled);
+            }
+
             from.require_auth();
             token_client.transfer(&from, &e.current_contract_address(), &amount);
             write_offer(
@@ -214,7 +221,7 @@ impl OfferPoolTrait for OfferPool {
 
                 let token_client = token::Client::new(&e, &offer.pool_token);
                 let tc_client = tc::Client::new(&e, &tc_contract);
-                if tc_client.is_disabled(&tc_id){
+                if !tc_client.is_disabled(&tc_id){
                     panic_with_error!(&e, Error::TCDisabled);
                 }
                 to.require_auth();
