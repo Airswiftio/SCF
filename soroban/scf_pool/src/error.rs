@@ -11,5 +11,6 @@ pub enum Error {
     NotAuthorized = 5,
     TokenNotSupported = 6,
     TokenExists = 7,
-    TokensNotExists=8
+    TokensNotExists=8,
+    TCDisabled=9,
 }
