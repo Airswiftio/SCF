@@ -2,7 +2,7 @@ use crate::admin::{has_administrator, read_administrator, write_administrator};
 use crate::error::Error;
 use crate::event;
 use crate::interface::OfferPoolTrait;
-use crate::offer::{change_offer, check_offer, read_offer, write_offer};
+use crate::offer::{change_offer, check_offer, read_offer, write_offer, read_offerID, write_offerID};
 use crate::pool_token::{add_pool_token, create_contract, get_pool_token, has_pool_token, read_ext_token, read_pool_tokens, read_wasm_hash, write_ext_token, write_wasm_hash};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
@@ -27,6 +27,7 @@ impl OfferPoolTrait for OfferPool {
         }
         write_administrator(&e, &admin);
         write_wasm_hash(&e, token_wasm_hash);
+        write_offerID(&e, 1);
     }
 
     fn admin(env: Env) -> Address {
@@ -124,15 +125,11 @@ impl OfferPoolTrait for OfferPool {
     fn create_offer(
         e: Env,
         from: Address,
-        offer_id: i128,
         pool_token: Address,
         amount: i128,
         tc_contract: Address,
         tc_id: i128,
-    ) {
-        if check_offer(&e, offer_id) {
-            panic_with_error!(&e, Error::OfferExist);
-        } else {
+    )->i128 {
             e.storage()
                 .instance()
                 .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -150,6 +147,9 @@ impl OfferPoolTrait for OfferPool {
 
             from.require_auth();
             token_client.transfer(&from, &e.current_contract_address(), &amount);
+
+            let offer_id=read_offerID(&e);
+
             write_offer(
                 &e,
                 offer_id,
@@ -159,8 +159,10 @@ impl OfferPoolTrait for OfferPool {
                 tc_contract,
                 tc_id,
             );
+
+            write_offerID(&e, offer_id+1);
             event::create_offer(&e, from, offer_id, amount);
-        }
+            return  offer_id;
     }
 
     // Cancels an offer and returns the offered amount to the owner. Callable by the admin or offer owner.

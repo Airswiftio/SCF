@@ -309,16 +309,17 @@ fn test_create_offer() {
     // offerer deposits ext token to receive liquidity tokens in exchange
     pool_client.deposit(&offerer.clone(), &token_client.address, &1000000);
 
-    let offer_id = 1;
 
-    pool_client.create_offer(
+
+    let offer_id= pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &600000,
         &tc_client.address,
         &1,
     );
+
+    assert_eq!(offer_id, 1);
 
     //Test for the event
     //Get the latest event
@@ -381,7 +382,6 @@ fn test_create_offer_insufficient_balance() {
     // create_offer should fail because the offerer did not deposit enough ext_token
     let res = pool_client.try_create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &2000000,
         &tc_client.address,
@@ -390,60 +390,57 @@ fn test_create_offer_insufficient_balance() {
     assert_eq!(res.is_err(), true);
 }
 
-#[test]
-fn test_create_offer_duplicate() {
-    let e = Env::default();
-    e.mock_all_auths();
-    let admin = Address::generate(&e);
-    let buyer = Address::generate(&e);
-    let offerer = Address::generate(&e);
-    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let (pool_client, _) = setup_pool(&e, &admin);
-    let liquidity_token = pool_client.add_pool_token(&token_client.address);
-    let liquidity_token_client = token::Client::new(&e, &liquidity_token);
-    let tc_client = setup_tc(
-        &e,
-        &admin,
-        &buyer,
-        &1000000,
-        &1712793295,
-        &token_client.address,
-        &token_client.decimals(),
-    );
+// #[test]
+// fn test_create_offer_duplicate() {
+//     let e = Env::default();
+//     e.mock_all_auths();
+//     let admin = Address::generate(&e);
+//     let buyer = Address::generate(&e);
+//     let offerer = Address::generate(&e);
+//     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+//     let (pool_client, _) = setup_pool(&e, &admin);
+//     let liquidity_token = pool_client.add_pool_token(&token_client.address);
+//     let liquidity_token_client = token::Client::new(&e, &liquidity_token);
+//     let tc_client = setup_tc(
+//         &e,
+//         &admin,
+//         &buyer,
+//         &1000000,
+//         &1712793295,
+//         &token_client.address,
+//         &token_client.decimals(),
+//     );
 
-    // mint ext token to offerer
-    token_admin_client.mint(&offerer, &2000000);
+//     // mint ext token to offerer
+//     token_admin_client.mint(&offerer, &2000000);
 
-    // offerer deposits ext token to receive liquidity tokens in exchange
-    pool_client.deposit(&offerer.clone(), &token_client.address, &2000000);
+//     // offerer deposits ext token to receive liquidity tokens in exchange
+//     pool_client.deposit(&offerer.clone(), &token_client.address, &2000000);
 
-    let offer_id = 1;
 
-    let res = pool_client.try_create_offer(
-        &offerer,
-        &offer_id,
-        &liquidity_token.clone(),
-        &1000000,
-        &tc_client.address,
-        &1,
-    );
-    assert_eq!(res.is_ok(), true);
-    assert_eq!(liquidity_token_client.balance(&offerer.clone()), 1000000);
-    let res = pool_client.try_create_offer(
-        &offerer,
-        &offer_id,
-        &liquidity_token.clone(),
-        &1000000,
-        &tc_client.address,
-        &1,
-    );
-    assert_eq!(
-        res,
-        Err(Ok(Error::from_contract_error(
-            ContractError::OfferExist as u32
-        )))
-    );
-}
+//     let res = pool_client.try_create_offer(
+//         &offerer,
+//         &liquidity_token.clone(),
+//         &1000000,
+//         &tc_client.address,
+//         &1,
+//     );
+//     assert_eq!(res.is_ok(), true);
+//     assert_eq!(liquidity_token_client.balance(&offerer.clone()), 1000000);
+//     let res = pool_client.try_create_offer(
+//         &offerer,
+//         &liquidity_token.clone(),
+//         &1000000,
+//         &tc_client.address,
+//         &1,
+//     );
+//     assert_eq!(
+//         res,
+//         Err(Ok(Error::from_contract_error(
+//             ContractError::OfferExist as u32
+//         )))
+//     );
+// }
 
 #[test]
 fn test_accept_offer() {
@@ -474,10 +471,8 @@ fn test_accept_offer() {
     tc_client.mint_original(&buyer, &String::from_str(&e, ""));
 
     // create and accept the offer
-    let offer_id = 1;
-    pool_client.create_offer(
+    let offer_id=pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -528,7 +523,7 @@ fn test_accept_offer_nonexistent_offer() {
 }
 
 #[test]
-fn test_accept_offer_nonexistent_tc() {
+fn test_create_offer_nonexistent_tc() {
     let e = Env::default();
     e.mock_all_auths();
     let admin = Address::generate(&e);
@@ -551,16 +546,13 @@ fn test_accept_offer_nonexistent_tc() {
     pool_client.deposit(&offerer, &token_client.address, &1000000);
 
     // try to accept an offer for a TC that was never minted
-    let offer_id = 1;
-    pool_client.create_offer(
+    let res=pool_client.try_create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
         &0,
     );
-    let res = pool_client.try_accept_offer(&admin, &offer_id);
     assert_eq!(res, Err(Ok(Error::from_contract_error(1))))
 }
 
@@ -592,11 +584,9 @@ fn test_accept_offer_not_tc_owner() {
     tc_client.mint_original(&tc_holder, &String::from_str(&e, ""));
 
     // other_user is not the owner of the TC
-    let offer_id = 1;
     let other_user = Address::generate(&e);
-    pool_client.create_offer(
+    let offer_id = pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -634,10 +624,8 @@ fn test_expire_accepted_offer() {
     tc_client.mint_original(&tc_holder, &String::from_str(&e, ""));
 
     // create and accept the offer
-    let offer_id = 1;
-    pool_client.create_offer(
+    let offer_id = pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -697,10 +685,8 @@ fn test_expire_offer_as_admin() {
 
     pool_client.deposit(&offerer, &token_client.address, &1000000);
 
-    let offer_id = 1;
-    pool_client.create_offer(
+    let offer_id = pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -735,10 +721,8 @@ fn test_expire_offer_as_owner() {
 
     pool_client.deposit(&offerer, &token_client.address, &1000000);
 
-    let offer_id = 1;
-    pool_client.create_offer(
+    let offer_id = pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -791,11 +775,9 @@ fn test_expire_offer_not_owned() {
 
     pool_client.deposit(&offerer, &token_client.address, &1000000);
 
-    let offer_id = 1;
     let other_user = Address::generate(&e);
-    pool_client.create_offer(
+    let offer_id =pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,
@@ -841,7 +823,6 @@ fn test_accept_expired_offer() {
     let offer_id = 1;
     pool_client.create_offer(
         &offerer,
-        &offer_id,
         &liquidity_token.clone(),
         &1000000,
         &tc_client.address,

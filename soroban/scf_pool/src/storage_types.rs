@@ -21,6 +21,7 @@ pub struct Offer {
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
+    OfferID,
     Offer(i128),
     PoolTokenWasmHash,
     PoolTokens,        // contains a map of pool token address -> asset token address

@@ -34,12 +34,11 @@ pub trait OfferPoolTrait {
     fn create_offer(
         e: Env,
         from: Address,
-        offer_id: i128,
         pool_token: Address,
         amount: i128,
         tc_contract: Address,
         tc_id: i128,
-    );
+    )->i128;
 
     /// Cancel a offer by expiring it. Caller must be the user who created the request (the from of the offer).
     /// Transfers the liquidity tokens back to the caller (from ).
