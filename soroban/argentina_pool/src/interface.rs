@@ -39,7 +39,7 @@ pub trait LiquidityPoolTrait {
 
     /// Create a loan offer against a TC. The caller (creditor) transfers liquidity tokens to the smart contract equal to the value of the TC.
     /// The loan will use the liquidity pool's interest rate at the time of the offer being created
-    fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_addr: Address, tc_id: i128);
+    fn create_loan_offer(e: Env, from: Address, tc_addr: Address, tc_id: i128)->i128;
 
     /// Cancel a loan offer. Caller must be the user who created the request (creditor).
     /// Transfers the liquidity tokens back to the caller.

@@ -26,4 +26,5 @@ pub enum DataKey {
     Owner(i128),
     RatePercent,
     Loan(i128),
+    OfferID,
 }

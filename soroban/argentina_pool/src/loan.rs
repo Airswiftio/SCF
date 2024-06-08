@@ -67,3 +67,18 @@ pub fn read_loan(e: &Env, offer_id: i128) -> Loan {
         None => panic_with_error!(&e, Error::NotFound),
     }
 }
+
+pub fn write_offerID(e:&Env, id: i128){
+    let key=DataKey::OfferID;
+    e.storage().persistent().set(&key, &id);
+    e.storage()
+        .persistent()
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+}
+
+pub fn read_offerID(e:&Env)->i128{
+    let key=DataKey::OfferID;
+    let CurrentID=e.storage().persistent().get::<DataKey, i128>(&key).unwrap();
+
+    return  CurrentID;
+}

@@ -4,8 +4,7 @@ use crate::{
     ext_token::{read_ext_token, write_ext_token},
     interface::LiquidityPoolTrait,
     loan::{
-        has_loan, read_loan, read_rate_percent, write_loan, write_rate_percent, Loan, LoanStatus,
-    },
+        has_loan, read_loan, read_rate_percent, write_loan, write_rate_percent, Loan, LoanStatus, write_offerID, read_offerID},
     pool_token::{create_contract, read_pool_token, write_pool_token},
     storage_types::{TokenInfo, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
 };
@@ -126,16 +125,16 @@ impl LiquidityPoolTrait for LiquidityPool {
         );
     }
 
-    fn create_loan_offer(e: Env, from: Address, offer_id: i128, tc_address: Address, tc_id: i128) {
+    fn create_loan_offer(e: Env, from: Address, tc_address: Address, tc_id: i128)->i128 {
         from.require_auth();
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        if has_loan(&e, offer_id) {
-            panic_with_error!(&e, Error::NotEmpty);
-        };
-
+        // if has_loan(&e, offer_id) {
+        //     panic_with_error!(&e, Error::NotEmpty);
+        // };
+        let offer_id=read_offerID(&e);
         let tc_amount = i128::from(tc_contract::Client::new(&e, &tc_address).get_amount(&tc_id));
         // lock in funds from caller (potential creditor)
         transfer_scaled(&e, from.clone(), e.current_contract_address(), tc_amount, 0);
@@ -151,6 +150,8 @@ impl LiquidityPoolTrait for LiquidityPool {
         };
 
         write_loan(&e, request);
+        write_offerID(&e, offer_id+1);
+        return offer_id;
     }
 
     fn cancel_loan_offer(e: Env, offer_id: i128) {

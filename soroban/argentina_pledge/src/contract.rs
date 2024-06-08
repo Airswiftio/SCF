@@ -76,7 +76,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &from, id);
-
+        write_approval(&e, id, None);
         write_owner(&e, id, Some(to.clone()));
         event::transfer(&e, from, to, id);
     }
