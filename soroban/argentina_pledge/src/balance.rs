@@ -1,9 +1,9 @@
 use crate::storage_types::DataKey;
 use soroban_sdk::Env;
 
-pub fn read_supply(e: &Env) -> i128 {
+pub fn read_supply(e: &Env) -> u64 {
     let key = DataKey::Supply;
-    match e.storage().instance().get::<DataKey, i128>(&key) {
+    match e.storage().instance().get::<DataKey, u64>(&key) {
         Some(balance) => balance,
         None => 0,
     }

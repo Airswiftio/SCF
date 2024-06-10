@@ -25,7 +25,7 @@ pub struct ApprovalAll {
 #[contracttype]
 pub enum ApprovalKey {
     All(ApprovalAll),
-    ID(i128),
+    ID(u64),
 }
 
 #[derive(Clone)]
@@ -34,9 +34,9 @@ pub enum DataKey {
     Admin,
     ExtToken,
     Supply,
-    FileHashes(i128),
-    Amount(i128),
-    RedeemTime(i128),
-    Owner(i128),
+    FileHashes(u64),
+    Amount(u64),
+    RedeemTime(u64),
+    Owner(u64),
     Approval(ApprovalKey),
 }

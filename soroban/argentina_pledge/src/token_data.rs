@@ -4,7 +4,7 @@ use crate::{
 };
 use soroban_sdk::{panic_with_error, Env, String, Vec};
 
-pub fn write_amount(e: &Env, id: i128, amount: u32) {
+pub fn write_amount(e: &Env, id: u64, amount: u64) {
     let key = DataKey::Amount(id);
     e.storage().persistent().set(&key, &amount);
     e.storage()
@@ -12,7 +12,7 @@ pub fn write_amount(e: &Env, id: i128, amount: u32) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn read_amount(e: &Env, id: i128) -> u32 {
+pub fn read_amount(e: &Env, id: u64) -> u64 {
     let key = DataKey::Amount(id);
     match e.storage().persistent().get(&key) {
         Some(amount) => {
@@ -27,7 +27,7 @@ pub fn read_amount(e: &Env, id: i128) -> u32 {
     }
 }
 
-pub fn write_file_hashes(e: &Env, id: i128, metadata: Vec<String>) {
+pub fn write_file_hashes(e: &Env, id: u64, metadata: Vec<String>) {
     let key = DataKey::FileHashes(id);
     e.storage().persistent().set(&key, &metadata);
     e.storage()
@@ -35,7 +35,7 @@ pub fn write_file_hashes(e: &Env, id: i128, metadata: Vec<String>) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn read_file_hashes(e: &Env, id: i128) -> Vec<String> {
+pub fn read_file_hashes(e: &Env, id: u64) -> Vec<String> {
     let key = DataKey::FileHashes(id);
     match e.storage().persistent().get(&key) {
         Some(data) => {
@@ -50,7 +50,7 @@ pub fn read_file_hashes(e: &Env, id: i128) -> Vec<String> {
     }
 }
 
-pub fn write_redeem_time(e: &Env, id: i128, redeem_time: u64) {
+pub fn write_redeem_time(e: &Env, id: u64, redeem_time: u64) {
     let key = DataKey::RedeemTime(id);
     e.storage().persistent().set(&key, &redeem_time);
     e.storage()
@@ -58,7 +58,7 @@ pub fn write_redeem_time(e: &Env, id: i128, redeem_time: u64) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn read_redeem_time(e: &Env, id: i128) -> u64 {
+pub fn read_redeem_time(e: &Env, id: u64) -> u64 {
     let key = DataKey::RedeemTime(id);
     match e.storage().persistent().get(&key) {
         Some(redeem_time) => {

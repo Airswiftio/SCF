@@ -50,7 +50,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&e, admin, new_admin)
     }
 
-    fn mint(e: Env, amount: u32, redeem_time: u64, file_hashes: Vec<String>) -> i128 {
+    fn mint(e: Env, amount: u64, redeem_time: u64, file_hashes: Vec<String>) -> u64 {
         let admin = read_admin(&e);
         admin.require_auth();
 
@@ -70,7 +70,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         id
     }
 
-    fn transfer(e: Env, from: Address, to: Address, id: i128) {
+    fn transfer(e: Env, from: Address, to: Address, id: u64) {
         from.require_auth();
         e.storage()
             .instance()
@@ -81,7 +81,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::transfer(&e, from, to, id);
     }
 
-    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, id: i128) {
+    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, id: u64) {
         spender.require_auth();
         e.storage()
             .instance()
@@ -100,7 +100,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         }
     }
 
-    fn appr(e: Env, owner: Address, operator: Address, id: i128) {
+    fn appr(e: Env, owner: Address, operator: Address, id: u64) {
         owner.require_auth();
         e.storage()
             .instance()
@@ -111,7 +111,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::approve(&e, operator, id);
     }
 
-    fn del_appr(e: Env, owner: Address, id: i128) {
+    fn del_appr(e: Env, owner: Address, id: u64) {
         owner.require_auth();
         e.storage()
             .instance()
@@ -131,7 +131,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::approve_all(&e, operator, owner)
     }
 
-    fn get_appr(e: Env, id: i128) -> Address {
+    fn get_appr(e: Env, id: u64) -> Address {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -145,7 +145,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         read_approval_all(&e, owner, operator)
     }
 
-    fn pledge(e: Env, from: Address, id: i128) {
+    fn pledge(e: Env, from: Address, id: u64) {
         from.require_auth();
         e.storage()
             .instance()
@@ -164,7 +164,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::transfer(&e, e.current_contract_address(), from, id);
     }
 
-    fn redeem(e: Env, to: Address, id: i128) {
+    fn redeem(e: Env, to: Address, id: u64) {
         to.require_auth();
         e.storage()
             .instance()
@@ -186,21 +186,21 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::burn(&e, to, id);
     }
 
-    fn get_amount(e: Env, id: i128) -> u32 {
+    fn get_amount(e: Env, id: u64) -> u64 {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_amount(&e, id)
     }
 
-    fn get_owner(e: Env, id: i128) -> Address {
+    fn get_owner(e: Env, id: u64) -> Address {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_owner(&e, id)
     }
 
-    fn get_file_hashes(e: Env, id: i128) -> Vec<String> {
+    fn get_file_hashes(e: Env, id: u64) -> Vec<String> {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -215,7 +215,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         (ext_token.address, ext_token.decimals)
     }
 
-    fn get_redeem_time(e: Env, id: i128) -> u64 {
+    fn get_redeem_time(e: Env, id: u64) -> u64 {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
