@@ -35,6 +35,10 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["appr", operator: Address], data = [id: i128]
     fn appr(e: Env, owner: Address, operator: Address, id: i128);
 
+    /// Resets the approval for token "id" if "owner" is the current owner of token "id".
+    /// Emit event with topics = ["appr", operator: Address], data = [id: i128]
+    fn del_appr(env: Env, owner: Address, id: i128);
+
     /// If "approved", allows "operator" to manage all tokens of "owner"
     /// Emit event with topics = ["appr_all", operator: Address], data = [owner: Address]
     fn appr_all(e: Env, owner: Address, operator: Address, approved: bool);

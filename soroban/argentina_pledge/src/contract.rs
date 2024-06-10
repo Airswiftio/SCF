@@ -111,6 +111,17 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::approve(&e, operator, id);
     }
 
+    fn del_appr(e: Env, owner: Address, id: i128) {
+        owner.require_auth();
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&e, &owner, id);
+
+        write_approval(&e, id, None);
+        event::remove_approve(&e, id);
+    }
+
     fn appr_all(e: Env, owner: Address, operator: Address, approved: bool) {
         owner.require_auth();
         e.storage()
