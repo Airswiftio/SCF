@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, String};
+use soroban_sdk::{contracttype, Address};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
 pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 7 * DAY_IN_LEDGERS;
@@ -21,10 +21,6 @@ pub enum DataKey {
     ExtToken,
     PoolToken,
     Supply,
-    Amount(i128),
-    RedeemTime(i128),
-    Owner(i128),
-    RatePercent,
-    Loan(i128),
-    OfferID,
+    FeePercent,
+    Loan(u64),
 }

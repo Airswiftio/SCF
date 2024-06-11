@@ -17,43 +17,37 @@ pub enum LoanStatus {
 #[derive(Clone)]
 #[contracttype]
 pub struct Loan {
-    pub id: i128,
     pub borrower: Address,
     pub creditor: Address,
     pub amount: i128,
     pub tc_address: Address,
-    pub tc_id: i128,
-    pub rate_percent: u32,
+    pub tc_id: u64,
+    pub fee_percent: u32,
     pub status: LoanStatus,
 }
 
-pub fn write_rate_percent(e: &Env, rate_percent: u32) {
-    let key = DataKey::RatePercent;
-    e.storage().instance().set(&key, &rate_percent);
+pub fn write_fee_percent(e: &Env, fee_percent: u32) {
+    let key = DataKey::FeePercent;
+    e.storage().instance().set(&key, &fee_percent);
 }
 
-pub fn read_rate_percent(e: &Env) -> u32 {
-    let key = DataKey::RatePercent;
+pub fn read_fee_percent(e: &Env) -> u32 {
+    let key = DataKey::FeePercent;
     match e.storage().instance().get::<DataKey, u32>(&key) {
-        Some(rate_percent) => rate_percent,
+        Some(fee_percent) => fee_percent,
         None => 0,
     }
 }
 
-pub fn write_loan(e: &Env, loan: Loan) {
-    let key = DataKey::Loan(loan.id);
+pub fn write_loan(e: &Env, offer_id: u64, loan: Loan) {
+    let key = DataKey::Loan(offer_id);
     e.storage().persistent().set(&key, &loan);
     e.storage()
         .persistent()
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn has_loan(e: &Env, offer_id: i128) -> bool {
-    let key = DataKey::Loan(offer_id);
-    e.storage().persistent().has(&key)
-}
-
-pub fn read_loan(e: &Env, offer_id: i128) -> Loan {
+pub fn read_loan(e: &Env, offer_id: u64) -> Loan {
     let key = DataKey::Loan(offer_id);
     match e.storage().persistent().get(&key) {
         Some(data) => {
@@ -68,17 +62,15 @@ pub fn read_loan(e: &Env, offer_id: i128) -> Loan {
     }
 }
 
-pub fn write_offerID(e:&Env, id: i128){
-    let key=DataKey::OfferID;
-    e.storage().persistent().set(&key, &id);
-    e.storage()
-        .persistent()
-        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+pub fn read_supply(e: &Env) -> u64 {
+    let key = DataKey::Supply;
+    match e.storage().instance().get::<DataKey, u64>(&key) {
+        Some(balance) => balance,
+        None => 0,
+    }
 }
 
-pub fn read_offerID(e:&Env)->i128{
-    let key=DataKey::OfferID;
-    let CurrentID=e.storage().persistent().get::<DataKey, i128>(&key).unwrap();
-
-    return  CurrentID;
+pub fn increment_supply(e: &Env) {
+    let key = DataKey::Supply;
+    e.storage().instance().set(&key, &(read_supply(&e) + 1));
 }
