@@ -4,14 +4,14 @@ use crate::{
     ext_token::{read_ext_token, write_ext_token},
     interface::LiquidityPoolTrait,
     loan::{
-        increment_supply, read_fee_percent, read_loan, read_supply, write_fee_percent, write_loan,
-        Loan, LoanStatus,
+        increment_supply, is_whitelisted, read_fee_percent, read_loan, read_supply, read_whitelist,
+        write_fee_percent, write_loan, write_whitelist, Loan, LoanStatus,
     },
     pool_token::{create_contract, read_pool_token, write_pool_token},
     storage_types::{TokenInfo, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
 };
 use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Val,
+    contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Val, Vec,
 };
 
 mod tc_contract {
@@ -94,6 +94,47 @@ impl LiquidityPoolTrait for LiquidityPool {
         write_fee_percent(&e, new_fee_percentage);
     }
 
+    fn add_whitelisted_tc(e: Env, tc_address: Address) {
+        let admin = read_admin(&e);
+        admin.require_auth();
+
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let mut tc_whitelist = read_whitelist(&e);
+        if tc_whitelist.contains_key(tc_address.clone()) {
+            return;
+        }
+        tc_whitelist.set(tc_address.clone(), ());
+        write_whitelist(&e, tc_whitelist);
+    }
+
+    fn remove_whitelisted_tc(e: Env, tc_address: Address) {
+        let admin = read_admin(&e);
+        admin.require_auth();
+
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let mut tc_whitelist = read_whitelist(&e);
+        if !tc_whitelist.contains_key(tc_address.clone()) {
+            return;
+        }
+        tc_whitelist.remove(tc_address.clone());
+        write_whitelist(&e, tc_whitelist);
+    }
+
+    fn get_whitelisted_tcs(e: Env) -> Vec<Address> {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let whitelist = read_whitelist(&e);
+        whitelist.keys()
+    }
+
     fn deposit(e: Env, from: Address, amount: i128) {
         from.require_auth();
         e.storage()
@@ -132,6 +173,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
+        if !is_whitelisted(&e, tc_address.clone()) {
+            panic_with_error!(&e, Error::TCNotWhitelisted);
+        }
         let offer_id = read_supply(&e);
         let tc_amount = i128::from(tc_contract::Client::new(&e, &tc_address).get_amount(&tc_id));
         // lock in funds from caller (potential creditor)
@@ -350,9 +394,10 @@ impl LiquidityPoolTrait for LiquidityPool {
     }
 }
 
-fn transfer_scaled(e: &Env, from: Address, to: Address, amount: i128, rate: u32) {
+fn transfer_scaled(e: &Env, from: Address, to: Address, amount: i128, added_percentage: u32) {
     let pool_token = read_pool_token(&e);
-    let scaled_amount = calculate_scaled_amount_with_interest(amount, pool_token.decimals, rate);
+    let scaled_amount =
+        calculate_scaled_amount_with_interest(amount, pool_token.decimals, added_percentage);
     match scaled_amount {
         Some(scaled_amount) => {
             token::Client::new(&e, &pool_token.address).transfer(&from, &to, &scaled_amount);
@@ -361,12 +406,16 @@ fn transfer_scaled(e: &Env, from: Address, to: Address, amount: i128, rate: u32)
     }
 }
 
-fn calculate_scaled_amount_with_interest(amount: i128, decimals: u32, rate: u32) -> Option<i128> {
-    if rate == 0 {
+fn calculate_scaled_amount_with_interest(
+    amount: i128,
+    decimals: u32,
+    added_percentage: u32,
+) -> Option<i128> {
+    if added_percentage == 0 {
         return amount.checked_mul(10i128.pow(decimals));
     }
     amount
         .checked_mul(10i128.pow(decimals))?
-        .checked_mul(100 + i128::from(rate))?
+        .checked_mul(100 + i128::from(added_percentage))?
         .checked_div(100)
 }

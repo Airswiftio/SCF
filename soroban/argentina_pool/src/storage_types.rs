@@ -23,4 +23,5 @@ pub enum DataKey {
     Supply,
     FeePercent,
     Loan(u64),
+    TCWhiteList,
 }

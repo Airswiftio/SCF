@@ -11,4 +11,5 @@ pub enum Error {
     NotOwned = 5,
     InvalidStatus = 6,
     IntegerOverflow = 7,
+    TCNotWhitelisted = 8,
 }

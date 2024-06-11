@@ -2,7 +2,7 @@ use crate::{
     errors::Error,
     storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD},
 };
-use soroban_sdk::{contracttype, panic_with_error, Address, Env};
+use soroban_sdk::{contracttype, panic_with_error, Address, Env, Map};
 
 #[contracttype]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -73,4 +73,25 @@ pub fn read_supply(e: &Env) -> u64 {
 pub fn increment_supply(e: &Env) {
     let key = DataKey::Supply;
     e.storage().instance().set(&key, &(read_supply(&e) + 1));
+}
+
+pub fn read_whitelist(e: &Env) -> Map<Address, ()> {
+    let key = DataKey::TCWhiteList;
+    match e
+        .storage()
+        .instance()
+        .get::<DataKey, Map<Address, ()>>(&key)
+    {
+        Some(whitelist) => whitelist,
+        None => Map::new(&e),
+    }
+}
+
+pub fn write_whitelist(e: &Env, whitelist: Map<Address, ()>) {
+    let key = DataKey::TCWhiteList;
+    e.storage().instance().set(&key, &whitelist);
+}
+
+pub fn is_whitelisted(e: &Env, tc_addr: Address) -> bool {
+    read_whitelist(&e).contains_key(tc_addr)
 }

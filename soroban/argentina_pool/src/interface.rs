@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, BytesN, Env};
+use soroban_sdk::{Address, BytesN, Env, Vec};
 
 pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
@@ -24,6 +24,12 @@ pub trait LiquidityPoolTrait {
 
     /// Set the additional amount percentage that must be paid back to close a loan.
     fn set_fee_percent(e: Env, new_fee_percentage: u32);
+
+    /// Whitelist a TC contract address to use for loans. Does nothing if the whitelist is already whitelisted.
+    fn add_whitelisted_tc(e: Env, tc_addr: Address);
+
+    /// Remove a TC contract address from the whitelist. Does nothing if the address is not in the whitelist.
+    fn remove_whitelisted_tc(e: Env, tc_addr: Address);
 
     // --------------------------------------------------------------------------------
     // Pool interface
@@ -87,4 +93,7 @@ pub trait LiquidityPoolTrait {
 
     /// Get the status of a loan
     fn get_loan_status(e: Env, offer_id: u64) -> u32;
+
+    /// Get the whitelisted TC contract addresses.
+    fn get_whitelisted_tcs(e: Env) -> Vec<Address>;
 }
