@@ -1,6 +1,4 @@
-use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, BytesN, Env, String, Vec,
-};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec};
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
@@ -60,7 +58,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        if redeem_time < e.ledger().timestamp() {
+        if redeem_time <= e.ledger().timestamp() {
             panic_with_error!(&e, Error::NotPermitted);
         }
         let id = read_supply(&e);
