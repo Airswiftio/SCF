@@ -2,7 +2,7 @@ use crate::{
     errors::Error,
     storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD},
 };
-use soroban_sdk::{panic_with_error, Env, String, Vec};
+use soroban_sdk::{panic_with_error, BytesN, Env, Vec};
 
 pub fn write_amount(e: &Env, id: u64, amount: u64) {
     let key = DataKey::Amount(id);
@@ -27,7 +27,7 @@ pub fn read_amount(e: &Env, id: u64) -> u64 {
     }
 }
 
-pub fn write_file_hashes(e: &Env, id: u64, metadata: Vec<String>) {
+pub fn write_file_hashes(e: &Env, id: u64, metadata: Vec<BytesN<32>>) {
     let key = DataKey::FileHashes(id);
     e.storage().persistent().set(&key, &metadata);
     e.storage()
@@ -35,7 +35,7 @@ pub fn write_file_hashes(e: &Env, id: u64, metadata: Vec<String>) {
         .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }
 
-pub fn read_file_hashes(e: &Env, id: u64) -> Vec<String> {
+pub fn read_file_hashes(e: &Env, id: u64) -> Vec<BytesN<32>> {
     let key = DataKey::FileHashes(id);
     match e.storage().persistent().get(&key) {
         Some(data) => {

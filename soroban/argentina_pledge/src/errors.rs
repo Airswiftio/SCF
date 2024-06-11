@@ -10,4 +10,5 @@ pub enum Error {
     NotPermitted = 4,
     NotOwned = 5,
     NotRedeemable = 6,
+    SizeLimitExceeded = 7,
 }

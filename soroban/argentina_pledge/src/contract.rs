@@ -1,4 +1,6 @@
-use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, String, Vec};
+use soroban_sdk::{
+    contract, contractimpl, panic_with_error, token, Address, BytesN, Env, String, Vec,
+};
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
@@ -50,7 +52,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&e, admin, new_admin)
     }
 
-    fn mint(e: Env, amount: u64, redeem_time: u64, file_hashes: Vec<String>) -> u64 {
+    fn mint(e: Env, amount: u64, redeem_time: u64, file_hashes: Vec<BytesN<32>>) -> u64 {
         let admin = read_admin(&e);
         admin.require_auth();
 
@@ -62,6 +64,9 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let to = e.current_contract_address();
         write_amount(&e, id, amount);
         write_redeem_time(&e, id, redeem_time);
+        if file_hashes.len() > 20 {
+            panic_with_error!(&e, Error::SizeLimitExceeded);
+        }
         write_file_hashes(&e, id, file_hashes);
         write_owner(&e, id, Some(to.clone()));
         increment_supply(&e);
@@ -200,7 +205,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         read_owner(&e, id)
     }
 
-    fn get_file_hashes(e: Env, id: u64) -> Vec<String> {
+    fn get_file_hashes(e: Env, id: u64) -> Vec<BytesN<32>> {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);

@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, String, Vec};
+use soroban_sdk::{Address, BytesN, Env, Vec};
 
 pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ pub trait TokenizedCertificateTrait {
     /// redeem_time is a Unix timestamp representing the date after which the TC can be redeemed.
     /// file_hashes contains the hashes of each relevant file uploaded when creating the order on the platform's backend.
     /// Emit event with topics = ["mint", to: Address], data = [id: u64]
-    fn mint(e: Env, amount: u64, redeem_time: u64, file_hashes: Vec<String>) -> u64;
+    fn mint(e: Env, amount: u64, redeem_time: u64, file_hashes: Vec<BytesN<32>>) -> u64;
 
     /// Transfer token 'id' between specified 'from' and 'to' addresses
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: u64]
@@ -62,7 +62,7 @@ pub trait TokenizedCertificateTrait {
     fn get_owner(e: Env, id: u64) -> Address;
 
     /// Returns the list of file hashes associated with a given TC
-    fn get_file_hashes(e: Env, id: u64) -> Vec<String>;
+    fn get_file_hashes(e: Env, id: u64) -> Vec<BytesN<32>>;
 
     /// Returns the address and decimals of the ext_token
     fn get_ext_token(e: Env) -> (Address, u32);
