@@ -60,6 +60,9 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
+        if redeem_time < e.ledger().timestamp() {
+            panic_with_error!(&e, Error::NotPermitted);
+        }
         let id = read_supply(&e);
         let to = e.current_contract_address();
         write_amount(&e, id, amount);
