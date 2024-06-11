@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, BytesN, Env, Vec};
+use soroban_sdk::{Address, Env, Vec};
 
 pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
@@ -6,13 +6,11 @@ pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
 
     /// Initialize the contract with "admin" as administrator.
-    /// token_wasm_hash is for automatically deploying a liquidity token contract.
-    /// ext_token_* parameters are for the wrapped USDC contract.
+    /// ext_token_* parameters specify a token to exchange for the TCs. The ext token does not necessarily need to be the same as the TC's ext token; for example, it could be a liquidity pool token.
     /// fee_percent is the default fee for paying off loans, expressed as a percentage.
     fn initialize(
         e: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
         ext_token_address: Address,
         ext_token_decimals: u32,
         fee_percent: u32,
@@ -34,14 +32,6 @@ pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
     // Pool interface
     // --------------------------------------------------------------------------------
-
-    /// Deposit USDC into the contract in exchange for a corresponding number of liquidity tokens minted to the "from" address.
-    /// Emit event with topics = ["deposit", from: Address], data = [amount: u32]
-    fn deposit(e: Env, from: Address, amount: i128);
-
-    /// Withdraw USDC from the contract in exchange for a corresponding number of liquidity tokens burned from the "from" address.
-    /// Emit event with topics = ["withdraw", from: Address], data = [amount: u32]
-    fn withdraw(e: Env, from: Address, amount: i128);
 
     /// Create a loan offer against a TC. The caller (creditor) transfers liquidity tokens to the smart contract equal to the value of the TC.
     /// The loan will use the liquidity pool's fee percentage at the time of the offer being created
@@ -78,9 +68,6 @@ pub trait LiquidityPoolTrait {
 
     /// Get the creditor associated with a loan.
     fn get_loan_creditor(e: Env, offer_id: u64) -> Address;
-
-    /// Get the contract address of the liquidity pool token.
-    fn get_liquidity_token(e: Env) -> Address;
 
     /// Get the contract address and decimals of the USDC contract.
     fn get_ext_token(e: Env) -> (Address, u32);

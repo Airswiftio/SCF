@@ -19,7 +19,6 @@ pub struct TokenInfo {
 pub enum DataKey {
     Admin,
     ExtToken,
-    PoolToken,
     Supply,
     FeePercent,
     Loan(u64),

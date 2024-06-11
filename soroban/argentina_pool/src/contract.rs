@@ -7,12 +7,9 @@ use crate::{
         increment_supply, is_whitelisted, read_fee_percent, read_loan, read_supply, read_whitelist,
         write_fee_percent, write_loan, write_whitelist, Loan, LoanStatus,
     },
-    pool_token::{create_contract, read_pool_token, write_pool_token},
     storage_types::{TokenInfo, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD},
 };
-use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Val, Vec,
-};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, Vec};
 
 mod tc_contract {
     soroban_sdk::contractimport!(
@@ -28,7 +25,6 @@ impl LiquidityPoolTrait for LiquidityPool {
     fn initialize(
         e: Env,
         admin: Address,
-        token_wasm_hash: BytesN<32>,
         ext_token_address: Address,
         ext_token_decimals: u32,
         fee_percent: u32,
@@ -41,27 +37,6 @@ impl LiquidityPoolTrait for LiquidityPool {
             panic!("Decimal must fit in a u8");
         }
 
-        // deploy and initialize the token contract
-        let pool_token_contract = create_contract(&e, token_wasm_hash);
-        e.invoke_contract::<Val>(
-            &pool_token_contract,
-            &"initialize".into_val(&e),
-            vec![
-                &e,
-                e.current_contract_address().into_val(&e),
-                7u32.into_val(&e),
-                "Argentina Pool Token".into_val(&e),
-                "APT".into_val(&e),
-            ],
-        );
-
-        write_pool_token(
-            &e,
-            TokenInfo {
-                address: pool_token_contract,
-                decimals: 7,
-            },
-        );
         write_ext_token(
             &e,
             TokenInfo {
@@ -133,38 +108,6 @@ impl LiquidityPoolTrait for LiquidityPool {
 
         let whitelist = read_whitelist(&e);
         whitelist.keys()
-    }
-
-    fn deposit(e: Env, from: Address, amount: i128) {
-        from.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        // Transfer USDC from "from" to the contract address
-        let ext_token = read_ext_token(&e);
-        let client = token::Client::new(&e, &ext_token.address);
-        client.transfer(&from, &e.current_contract_address(), &amount);
-
-        // Mint an equal number of liquidity tokens to "from"
-        token::StellarAssetClient::new(&e, &read_pool_token(&e).address).mint(&from, &amount);
-    }
-
-    fn withdraw(e: Env, from: Address, amount: i128) {
-        from.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-
-        // Burn the specified number of liquidity tokens from "from"
-        token::Client::new(&e, &read_pool_token(&e).address).burn(&from, &amount);
-
-        // Transfer USDC from the contract address to "from"
-        token::Client::new(&e, &read_ext_token(&e).address).transfer(
-            &e.current_contract_address(),
-            &from,
-            &amount,
-        );
     }
 
     fn create_loan_offer(e: Env, from: Address, tc_address: Address, tc_id: u64) -> u64 {
@@ -346,13 +289,6 @@ impl LiquidityPoolTrait for LiquidityPool {
         loan.creditor
     }
 
-    fn get_liquidity_token(e: Env) -> Address {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_pool_token(&e).address
-    }
-
     fn get_ext_token(e: Env) -> (Address, u32) {
         e.storage()
             .instance()
@@ -368,7 +304,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let scaled_amount = calculate_scaled_amount_with_interest(
             loan.amount,
-            read_pool_token(&e).decimals,
+            read_ext_token(&e).decimals,
             loan.fee_percent,
         );
         match scaled_amount {
@@ -395,12 +331,12 @@ impl LiquidityPoolTrait for LiquidityPool {
 }
 
 fn transfer_scaled(e: &Env, from: Address, to: Address, amount: i128, added_percentage: u32) {
-    let pool_token = read_pool_token(&e);
+    let ext_token = read_ext_token(&e);
     let scaled_amount =
-        calculate_scaled_amount_with_interest(amount, pool_token.decimals, added_percentage);
+        calculate_scaled_amount_with_interest(amount, ext_token.decimals, added_percentage);
     match scaled_amount {
         Some(scaled_amount) => {
-            token::Client::new(&e, &pool_token.address).transfer(&from, &to, &scaled_amount);
+            token::Client::new(&e, &ext_token.address).transfer(&from, &to, &scaled_amount);
         }
         None => panic_with_error!(&e, Error::IntegerOverflow),
     }
