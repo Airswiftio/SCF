@@ -186,10 +186,10 @@ impl LiquidityPoolTrait for LiquidityPool {
             panic_with_error!(&e, Error::InvalidStatus);
         }
 
-        // transfer the TC from caller (borrower) to creditor
+        // transfer the TC from caller (borrower) to smart contract
         tc_contract::Client::new(&e, &loan.tc_address).transfer(
             &from.clone(),
-            &loan.creditor,
+            &e.current_contract_address(),
             &loan.tc_id,
         );
 
@@ -219,7 +219,7 @@ impl LiquidityPoolTrait for LiquidityPool {
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // transfer liquidity tokens from caller (borrower) to smart contract
-        // pool rate is the additional percent rate needed to pay off the loan.
+        // pool fee_percent is the additional percentage fee needed to pay off the loan.
         transfer_scaled(
             &e,
             loan.borrower.clone(),
@@ -243,9 +243,9 @@ impl LiquidityPoolTrait for LiquidityPool {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        // transfer the TC from creditor (caller) to borrower
+        // transfer the TC from smart contract to borrower
         tc_contract::Client::new(&e, &loan.tc_address).transfer(
-            &loan.creditor.clone(),
+            &e.current_contract_address(),
             &loan.borrower,
             &loan.tc_id,
         );
