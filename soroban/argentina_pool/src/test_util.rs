@@ -1,9 +1,6 @@
 #![cfg(any(test, feature = "testutils"))]
 
-use soroban_sdk::{
-    testutils::{Address as _, BytesN as _, Ledger},
-    token, Address, BytesN, Env,
-};
+use soroban_sdk::{testutils::BytesN as _, token, Address, BytesN, Env};
 
 use crate::{contract::LiquidityPoolClient, LiquidityPool};
 
@@ -21,17 +18,9 @@ pub fn setup_pool<'a>(
 ) -> LiquidityPoolClient<'a> {
     let contract_id = e.register_contract(None, LiquidityPool);
     let client = LiquidityPoolClient::new(e, &contract_id);
-    let wasm_hash = install_token_wasm(e);
 
-    client.initialize(admin, &wasm_hash, ext_token_address, ext_token_decimals, &0);
+    client.initialize(admin, ext_token_address, ext_token_decimals, &0);
     client
-}
-
-pub fn install_token_wasm(e: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-    e.deployer().upload_contract_wasm(WASM)
 }
 
 pub fn setup_test_token<'a>(
@@ -60,7 +49,8 @@ pub fn setup_tc<'a>(
     client.initialize(&admin.clone(), ext_token_address, ext_token_decimals);
     client
 }
-
+/*
 pub fn set_ledger_timestamp(e: &Env, timestamp: u64) {
     e.ledger().with_mut(|li| li.timestamp = timestamp);
 }
+*/
