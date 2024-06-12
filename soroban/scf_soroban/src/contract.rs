@@ -32,7 +32,9 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         if has_administrator(&e) {
             panic!("already initialized")
         }
-
+        if end_time <= e.ledger().timestamp() {
+            panic_with_error!(&e, Error::NotPermitted);
+        }
         write_administrator(&e, &admin);
         //write_name(&e, &name);
         //write_symbol(&e, &symbol);
@@ -76,6 +78,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         check_owner(&env, &owner, id);
 
         write_approval(&env, id, None);
+        event::remove_approve(&env, id);
     }
 
     fn appr_all(env: Env, owner: Address, operator: Address, approved: bool) {

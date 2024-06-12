@@ -24,11 +24,7 @@ pub enum ApprovalKey {
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    Nonce(Address),
-    Minted(Address),
     Admin,
-    Name,
-    Symbol,
     Approval(ApprovalKey),
     Owner(i128),
     Disabled(i128),
