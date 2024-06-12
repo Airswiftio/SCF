@@ -5,7 +5,7 @@ use crate::errors::Error;
 use crate::event;
 use crate::interface::TokenizedCertificateTrait;
 use crate::metadata::{read_external_token, write_external_token};
-use crate::order_info::{read_buyer_address, read_total_amount, write_order_info};
+use crate::order_info::{read_order_info, write_order_info};
 use crate::order_state::{read_paid, update_and_read_expired, write_paid};
 use crate::owner::{
     add_vc, check_owner, read_all_owned, read_owner, read_recipient, read_vc, write_owner,
@@ -194,7 +194,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         if id != 0 {
             panic_with_error!(&env, Error::NotEmpty);
         }
-        let amount = read_total_amount(&env);
+        let amount = read_order_info(&env).total_amount;
         write_owner(&env, id, Some(to.clone()));
         write_sub_tc(&env, id, id, amount);
         write_vc(&env, id, vec![&env, vc]);
@@ -362,10 +362,10 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         }
         let ext_token = read_external_token(&env);
         let client = token::Client::new(&env, &ext_token.contract_addr);
-        let base_amount = read_total_amount(&env);
-        let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
+        let order_info = read_order_info(&env);
+        let amount = i128::from(order_info.total_amount) * 10i128.pow(ext_token.decimals);
 
-        if from != read_buyer_address(&env) {
+        if from != order_info.buyer_address {
             panic_with_error!(&env, Error::NotAuthorized);
         }
         from.require_auth();

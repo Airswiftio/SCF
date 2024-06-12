@@ -1,7 +1,7 @@
 use crate::balance::read_supply;
 use crate::event;
 
-use crate::order_info::read_end_time;
+use crate::order_info::read_order_info;
 use crate::owner::{read_owner, write_owner};
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
 use crate::sub_tc::read_sub_tc;
@@ -13,7 +13,7 @@ pub fn update_and_read_expired(env: &Env) -> bool {
         return true;
     }
     let ledger = env.ledger();
-    let expired = ledger.timestamp() >= read_end_time(&env);
+    let expired = ledger.timestamp() >= read_order_info(&env).end_time;
     if expired {
         write_expired(&env, true);
         // transfer unclaimed TCs to the root TC's owner address
