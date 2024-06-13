@@ -197,7 +197,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let amount = read_order_info(&env).total_amount;
         write_owner(&env, id, Some(to.clone()));
         write_sub_tc(&env, id, id, amount);
-        write_vc(&env, id, vec![&env, vc]);
+        add_vc(&env, id, vc);
         write_sub_tc_disabled(&env, id, false);
         increment_supply(&env);
 

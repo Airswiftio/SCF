@@ -2,7 +2,7 @@ use crate::balance::read_supply;
 use crate::errors::Error;
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
 use crate::sub_tc::read_sub_tc_disabled;
-use soroban_sdk::{panic_with_error, Address, Env, String, Vec};
+use soroban_sdk::{panic_with_error, vec, Address, Env, String, Vec};
 
 pub fn read_owner(env: &Env, id: i128) -> Address {
     let key = DataKey::Owner(id);
@@ -79,9 +79,15 @@ pub fn write_vc(env: &Env, id: i128, vc: Vec<String>) {
 }
 
 pub fn add_vc(env: &Env, id: i128, vc: String) {
+    if vc.len() > 2048 {
+        panic_with_error!(env, Error::VCStringTooLong);
+    }
     let key = DataKey::VC(id);
     match env.storage().persistent().get::<DataKey, Vec<String>>(&key) {
         Some(mut vcs) => {
+            if vcs.len() > 100 {
+                panic_with_error!(env, Error::VCListCapacityReached);
+            }
             vcs.push_back(vc);
             env.storage().persistent().set(&key, &vcs);
             env.storage().persistent().extend_ttl(
@@ -91,9 +97,7 @@ pub fn add_vc(env: &Env, id: i128, vc: String) {
             );
         }
         None => {
-            let mut new_vcs = Vec::new(&env);
-            new_vcs.push_back(vc);
-            env.storage().persistent().set(&key, &new_vcs);
+            env.storage().persistent().set(&key, &vec![&env, vc]);
             env.storage().persistent().extend_ttl(
                 &key,
                 BALANCE_LIFETIME_THRESHOLD,

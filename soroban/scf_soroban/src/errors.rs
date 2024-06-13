@@ -12,4 +12,6 @@ pub enum Error {
     AmountTooMuch = 6,
     InvalidContract = 7,
     InvalidArgs = 8,
+    VCStringTooLong = 9,
+    VCListCapacityReached = 10,
 }
