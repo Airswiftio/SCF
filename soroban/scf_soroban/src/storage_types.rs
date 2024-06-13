@@ -41,7 +41,8 @@ pub enum DataKey {
 #[derive(Clone)]
 #[contracttype]
 pub struct SubTC {
-    pub root: i128,
+    pub parent: i128,
+    pub depth: u32,
     pub amount: u32,
 }
 

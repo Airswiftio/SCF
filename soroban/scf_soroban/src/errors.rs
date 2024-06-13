@@ -14,4 +14,6 @@ pub enum Error {
     InvalidArgs = 8,
     VCStringTooLong = 9,
     VCListCapacityReached = 10,
+    SplitLimitReached = 11,
+    SplitAmountTooLow = 12,
 }

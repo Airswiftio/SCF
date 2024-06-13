@@ -117,7 +117,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_tc = read_sub_tc(&env, id);
-        sub_tc.root
+        sub_tc.parent
     }
 
     fn owner(env: Env, id: i128) -> Address {
@@ -196,7 +196,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         }
         let amount = read_order_info(&env).total_amount;
         write_owner(&env, id, Some(to.clone()));
-        write_sub_tc(&env, id, id, amount);
+        write_sub_tc(&env, id, id, 0, amount);
         add_vc(&env, id, vc);
         write_sub_tc_disabled(&env, id, false);
         increment_supply(&env);
@@ -236,20 +236,28 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         owner.require_auth();
         let contract_addr = env.current_contract_address();
 
-        let root = read_sub_tc(&env, id);
+        let parent = read_sub_tc(&env, id);
+        if parent.depth >= 5 {
+            panic_with_error!(&env, Error::SplitLimitReached);
+        }
         let mut sum = 0;
+        let root_total = read_order_info(&env).total_amount;
         for req in splits.clone() {
+            // each split must be at least 10% of the root total_amount
+            if req.amount * 10 < root_total {
+                panic_with_error!(&env, Error::SplitAmountTooLow);
+            }
             sum += req.amount;
         }
-        if sum > root.amount {
+        if sum > parent.amount {
             panic_with_error!(&env, Error::AmountTooMuch);
         }
 
-        let mut remaining = root.amount;
+        let mut remaining = parent.amount;
         let mut new_ids = Vec::new(&env);
         for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_tc(&env, new_id, id, req.amount);
+            write_sub_tc(&env, new_id, id, parent.depth + 1, req.amount);
             write_sub_tc_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
@@ -262,7 +270,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         // if root amount > 0, create another sub tc to represent the remaining amount belonging to original owner
         if remaining > 0 {
             let new_id = read_supply(&env);
-            write_sub_tc(&env, new_id, id, remaining);
+            write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
             write_sub_tc_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(owner.clone()));
             write_vc(&env, new_id, vec![&env]);

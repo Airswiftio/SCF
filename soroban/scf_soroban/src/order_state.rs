@@ -21,7 +21,7 @@ pub fn update_and_read_expired(env: &Env) -> bool {
         if last_id > 0 {
             let contract_addr = &env.current_contract_address();
             for i in 1..last_id {
-                let parent_id = read_sub_tc(&env, i).root;
+                let parent_id = read_sub_tc(&env, i).parent;
                 let to = read_owner(&env, parent_id);
                 let owner = read_owner(&env, i);
                 if owner == contract_addr.clone() {
