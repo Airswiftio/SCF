@@ -60,6 +60,27 @@ fn test_mint() {
 }
 
 #[test]
+fn test_mint_too_early() {
+    let e = Env::default();
+    let admin = Address::generate(&e);
+    let (token_client, _) = setup_test_token(&e, &admin);
+    let tc_client = setup_test_tc_contract(&e, &admin, &token_client.address, &0);
+    e.mock_all_auths();
+
+    let timestamp = 1641024000;
+    set_ledger_timestamp(&e, timestamp);
+
+    let redeem_time = timestamp - 86400;
+    let res = tc_client.try_mint(&1000000, &redeem_time, &vec![&e]);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
+}
+
+#[test]
 fn test_pledge() {
     let e = Env::default();
     let admin = Address::generate(&e);
