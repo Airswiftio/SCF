@@ -85,7 +85,7 @@ pub fn add_vc(env: &Env, id: i128, vc: String) {
     let key = DataKey::VC(id);
     match env.storage().persistent().get::<DataKey, Vec<String>>(&key) {
         Some(mut vcs) => {
-            if vcs.len() > 100 {
+            if vcs.len() >= 10 {
                 panic_with_error!(env, Error::VCListCapacityReached);
             }
             vcs.push_back(vc);
