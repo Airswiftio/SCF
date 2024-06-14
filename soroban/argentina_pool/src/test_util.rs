@@ -14,12 +14,11 @@ pub fn setup_pool<'a>(
     e: &Env,
     admin: &Address,
     ext_token_address: &Address,
-    ext_token_decimals: &u32,
 ) -> LiquidityPoolClient<'a> {
     let contract_id = e.register_contract(None, LiquidityPool);
     let client = LiquidityPoolClient::new(e, &contract_id);
 
-    client.initialize(admin, ext_token_address, ext_token_decimals, &0);
+    client.initialize(admin, ext_token_address, &0);
     client
 }
 

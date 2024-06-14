@@ -22,16 +22,12 @@ pub struct LiquidityPool;
 
 #[contractimpl]
 impl LiquidityPoolTrait for LiquidityPool {
-    fn initialize(
-        e: Env,
-        admin: Address,
-        ext_token_address: Address,
-        ext_token_decimals: u32,
-        fee_percent: u32,
-    ) {
+    fn initialize(e: Env, admin: Address, ext_token_address: Address, fee_percent: u32) {
         if has_admin(&e) {
             panic!("already initialized")
         }
+        let ext_token_decimals = token::Client::new(&e, &ext_token_address).decimals();
+
         write_admin(&e, &admin);
         if ext_token_decimals > u8::MAX.into() {
             panic!("Decimal must fit in a u8");

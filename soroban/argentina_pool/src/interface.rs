@@ -6,15 +6,9 @@ pub trait LiquidityPoolTrait {
     // --------------------------------------------------------------------------------
 
     /// Initialize the contract with "admin" as administrator.
-    /// ext_token_* parameters specify a token to exchange for the TCs. The ext token does not necessarily need to be the same as the TC's ext token; for example, it could be a liquidity pool token.
+    /// ext_token_address specifies a token to exchange for the TCs. The ext token does not necessarily need to be the same as the TC's ext token; for example, it could be a liquidity pool token.
     /// fee_percent is the default fee for paying off loans, expressed as a percentage.
-    fn initialize(
-        e: Env,
-        admin: Address,
-        ext_token_address: Address,
-        ext_token_decimals: u32,
-        fee_percent: u32,
-    );
+    fn initialize(e: Env, admin: Address, ext_token_address: Address, fee_percent: u32);
 
     /// If "admin" is the administrator, set the administrator to "new_admin".
     /// Emit event with topics = ["set_admin", admin: Address], data = [new_admin: Address]

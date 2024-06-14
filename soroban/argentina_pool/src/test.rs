@@ -17,7 +17,7 @@ fn test_initialize() {
 
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    client.initialize(&admin, &token_client.address, &token_client.decimals(), &2);
+    client.initialize(&admin, &token_client.address, &2);
 
     assert_eq!(
         client.get_ext_token(),
@@ -35,9 +35,9 @@ fn test_initialize_twice() {
 
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    client.initialize(&admin, &token_client.address, &token_client.decimals(), &2);
+    client.initialize(&admin, &token_client.address, &2);
 
-    client.initialize(&admin, &token_client.address, &token_client.decimals(), &2);
+    client.initialize(&admin, &token_client.address, &2);
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn test_tc_whitelist() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
     // initial whitelist should be empty
@@ -93,7 +93,7 @@ fn test_create_loan_offer_no_whitelist() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, _) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
     let creditor = Address::generate(&e);
@@ -114,7 +114,7 @@ fn test_create_loan_offer_insufficient_balance() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
     let borrower = Address::generate(&e);
@@ -135,7 +135,7 @@ fn test_create_loan_offer() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
     let borrower = Address::generate(&e);
@@ -168,7 +168,7 @@ fn test_cancel_loan_offer() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
 
     let borrower = Address::generate(&e);
@@ -193,7 +193,7 @@ fn test_accept_loan_offer() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     e.budget().reset_default();
 
@@ -229,7 +229,7 @@ fn test_payoff_loan() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     e.budget().reset_default();
 
@@ -265,7 +265,7 @@ fn test_payoff_loan_with_interest() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     e.budget().reset_default();
 
@@ -298,7 +298,7 @@ fn test_close_loan() {
     e.mock_all_auths();
     let admin = Address::generate(&e);
     let (token_client, token_admin_client) = setup_test_token(&e, &admin);
-    let client = setup_pool(&e, &admin, &token_client.address, &token_client.decimals());
+    let client = setup_pool(&e, &admin, &token_client.address);
     let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
     e.budget().reset_default();
 
