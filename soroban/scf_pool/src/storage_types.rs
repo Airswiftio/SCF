@@ -20,11 +20,16 @@ pub struct Offer {
 
 #[derive(Clone)]
 #[contracttype]
+pub struct TokenInfo {
+    pub address: Address,
+    pub decimals: u32,
+}
+
+#[derive(Clone)]
+#[contracttype]
 pub enum DataKey {
-    OfferID,
+    Supply,
     Offer(i128),
-    PoolTokenWasmHash,
-    PoolTokens,        // contains a map of pool token address -> asset token address
-    ExtToken(Address), // maps asset token address -> pool token address
+    ExtTokens, // contains a set of support external tokens
     Admin,
 }

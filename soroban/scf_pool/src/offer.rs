@@ -1,5 +1,5 @@
 use crate::storage_types::{DataKey, Offer, OFFER_BUMP_AMOUNT, OFFER_LIFETIME_THRESHOLD};
-use soroban_sdk::{xdr::Uint256, Address, Env};
+use soroban_sdk::{Address, Env};
 
 pub fn read_offer(e: &Env, offer_id: i128) -> Option<Offer> {
     let key = DataKey::Offer(offer_id);
@@ -13,24 +13,17 @@ pub fn read_offer(e: &Env, offer_id: i128) -> Option<Offer> {
     }
 }
 
-pub fn check_offer(e: &Env, offer_id: i128) -> bool {
-    let key = DataKey::Offer(offer_id);
-    e.storage().persistent().has(&key)
+pub fn read_supply(e: &Env) -> i128 {
+    let key = DataKey::Supply;
+    match e.storage().instance().get::<DataKey, i128>(&key) {
+        Some(offer_id) => offer_id,
+        None => 0,
+    }
 }
 
-pub fn write_offerID(e:&Env, id: i128){
-    let key=DataKey::OfferID;
-    e.storage().persistent().set(&key, &id);
-    e.storage()
-        .persistent()
-        .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
-}
-
-pub fn read_offerID(e:&Env)->i128{
-    let key=DataKey::OfferID;
-    let CurrentID=e.storage().persistent().get::<DataKey, i128>(&key).unwrap();
-
-    return  CurrentID;
+pub fn increment_supply(e: &Env) {
+    let key = DataKey::Supply;
+    e.storage().instance().set(&key, &(read_supply(&e) + 1));
 }
 
 pub fn write_offer(

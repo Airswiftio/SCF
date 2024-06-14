@@ -1,33 +1,27 @@
 #![cfg(any(test, feature = "testutils"))]
 
-mod tc_contract {
+pub mod tc_contract {
     soroban_sdk::contractimport!(
         file = "../scf_soroban/target/wasm32-unknown-unknown/release/scf_soroban.wasm"
     );
 }
 
 use crate::contract::{OfferPool, OfferPoolClient};
-use soroban_sdk::{
-    testutils::BytesN as _,
-    token::{self, TokenClient},
-    Address, BytesN, Env,
-};
+use soroban_sdk::{contracttype, testutils::BytesN as _, token, Address, BytesN, Env};
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SplitRequest {
+    pub amount: u32,
+    pub to: Address,
+}
 
 pub fn setup_pool<'a>(e: &Env, admin: &Address) -> (OfferPoolClient<'a>, Address) {
     let contract_id = e.register_contract(None, OfferPool);
     let client = OfferPoolClient::new(e, &contract_id);
-    let wasm_hash = install_token_wasm(e);
 
-    client.initialize(admin, &wasm_hash);
-
+    client.initialize(admin);
     (client, contract_id)
-}
-
-pub fn install_token_wasm(e: &Env) -> BytesN<32> {
-    soroban_sdk::contractimport!(
-        file = "../token/target/wasm32-unknown-unknown/release/soroban_token_contract.wasm"
-    );
-    e.deployer().upload_contract_wasm(WASM)
 }
 
 pub fn setup_test_token<'a>(
