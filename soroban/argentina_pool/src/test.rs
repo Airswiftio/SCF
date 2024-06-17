@@ -339,3 +339,85 @@ fn test_close_loan() {
     assert_eq!(token_client.balance(&creditor.clone()), 10500000000000);
     assert_eq!(tc_client.get_owner(&0), borrower.clone());
 }
+
+#[test]
+fn test_default_loan() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let client = setup_pool(&e, &admin, &token_client.address);
+    let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
+    e.budget().reset_default();
+
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
+    token_admin_client.mint(&borrower.clone(), &10000000000000);
+    token_admin_client.mint(&creditor.clone(), &10000000000000);
+    tc_client.mint(&1000000, &1641024000, &Vec::<BytesN<32>>::new(&e));
+    tc_client.pledge(&borrower.clone(), &0);
+    assert_eq!(tc_client.get_owner(&0), borrower.clone());
+    client.add_whitelisted_tc(&tc_client.address);
+
+    let loan_id = client.create_loan_offer(&creditor.clone(), &tc_client.address, &0);
+
+    // it should not be possible to default a loan that hasn't been accepted yet
+    let res = client.try_default_loan(&loan_id);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidStatus as u32
+        )))
+    );
+
+    client.accept_loan_offer(&borrower.clone(), &loan_id);
+    client.default_loan(&loan_id);
+    assert_eq!(
+        client.get_loan_status(&loan_id),
+        LoanStatus::Defaulted as u32
+    );
+    assert_eq!(tc_client.get_owner(&0), creditor.clone());
+
+    // it should not be possible to pay off a loan that has been defaulted
+    let res = client.try_payoff_loan(&loan_id);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidStatus as u32
+        )))
+    );
+}
+
+#[test]
+fn test_default_loan_already_paid() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let client = setup_pool(&e, &admin, &token_client.address);
+    let tc_client = setup_tc(&e, &admin, &token_client.address, &token_client.decimals());
+    e.budget().reset_default();
+
+    let borrower = Address::generate(&e);
+    let creditor = Address::generate(&e);
+    token_admin_client.mint(&borrower.clone(), &10000000000000);
+    token_admin_client.mint(&creditor.clone(), &10000000000000);
+    tc_client.mint(&1000000, &1641024000, &Vec::<BytesN<32>>::new(&e));
+    tc_client.pledge(&borrower.clone(), &0);
+    assert_eq!(tc_client.get_owner(&0), borrower.clone());
+    client.add_whitelisted_tc(&tc_client.address);
+
+    let loan_id = client.create_loan_offer(&creditor.clone(), &tc_client.address, &0);
+    client.accept_loan_offer(&borrower.clone(), &loan_id);
+    client.payoff_loan(&loan_id);
+    assert_eq!(client.get_loan_status(&loan_id), LoanStatus::Paid as u32);
+
+    // it should not be possible to default a loan that was already paid off
+    let res = client.try_default_loan(&loan_id);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidStatus as u32
+        )))
+    );
+}

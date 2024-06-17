@@ -12,6 +12,7 @@ pub enum LoanStatus {
     Active = 1,
     Paid = 2,
     Closed = 3,
+    Defaulted = 4,
 }
 
 #[derive(Clone)]

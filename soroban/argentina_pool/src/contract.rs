@@ -246,6 +246,29 @@ impl LiquidityPoolTrait for LiquidityPool {
         write_loan(&e, offer_id, loan);
     }
 
+    fn default_loan(e: Env, offer_id: u64) {
+        let admin = read_admin(&e);
+        admin.require_auth();
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let mut loan = read_loan(&e, offer_id);
+        if loan.status != LoanStatus::Active {
+            panic_with_error!(&e, Error::InvalidStatus);
+        }
+
+        // transfer the TC from smart contract to creditor
+        tc_contract::Client::new(&e, &loan.tc_address).transfer(
+            &e.current_contract_address(),
+            &loan.creditor,
+            &loan.tc_id,
+        );
+
+        // update loan info
+        loan.status = LoanStatus::Defaulted;
+        write_loan(&e, offer_id, loan);
+    }
+
     fn get_loan_fee(e: Env, offer_id: u64) -> u32 {
         let loan = read_loan(&e, offer_id);
         e.storage()

@@ -23,6 +23,9 @@ pub trait LiquidityPoolTrait {
     /// Remove a TC contract address from the whitelist. Does nothing if the address is not in the whitelist.
     fn remove_whitelisted_tc(e: Env, tc_addr: Address);
 
+    /// Call this function to transfer the TC to the creditor when a borrower has defaulted on a loan.
+    fn default_loan(e: Env, offer_id: u64);
+
     // --------------------------------------------------------------------------------
     // Pool interface
     // --------------------------------------------------------------------------------
