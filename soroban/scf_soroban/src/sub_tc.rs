@@ -17,12 +17,16 @@ pub fn read_sub_tc(env: &Env, id: i128) -> SubTC {
     }
 }
 
-pub fn write_sub_tc(env: &Env, id: i128, root: i128, amount: u32) {
+pub fn write_sub_tc(env: &Env, id: i128, parent: i128, depth: u32, amount: u32) {
     let key = DataKey::SubTCInfo(id);
     match env.storage().persistent().get::<DataKey, SubTC>(&key) {
         Some(_) => panic_with_error!(env, Error::NotEmpty),
         None => {
-            let sub_tc = SubTC { root, amount };
+            let sub_tc = SubTC {
+                parent,
+                depth,
+                amount,
+            };
             env.storage().persistent().set(&key, &sub_tc);
             env.storage().persistent().extend_ttl(
                 &key,

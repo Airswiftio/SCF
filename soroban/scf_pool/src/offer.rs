@@ -13,9 +13,17 @@ pub fn read_offer(e: &Env, offer_id: i128) -> Option<Offer> {
     }
 }
 
-pub fn check_offer(e: &Env, offer_id: i128) -> bool {
-    let key = DataKey::Offer(offer_id);
-    e.storage().persistent().has(&key)
+pub fn read_supply(e: &Env) -> i128 {
+    let key = DataKey::Supply;
+    match e.storage().instance().get::<DataKey, i128>(&key) {
+        Some(offer_id) => offer_id,
+        None => 0,
+    }
+}
+
+pub fn increment_supply(e: &Env) {
+    let key = DataKey::Supply;
+    e.storage().instance().set(&key, &(read_supply(&e) + 1));
 }
 
 pub fn write_offer(

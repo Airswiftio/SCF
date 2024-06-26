@@ -1,12 +1,12 @@
 #![cfg(test)]
 use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
 
+use crate::errors::Error as ContractError;
 use crate::storage_types::SplitRequest;
-use crate::test_util::setup_test_token;
-use soroban_sdk::testutils::Ledger;
+use crate::test_util::{set_ledger_timestamp, setup_test_token};
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, token::StellarAssetClient, vec, Address,
-    Env, String,
+    Env, Error, String,
 };
 
 #[test]
@@ -22,7 +22,28 @@ fn test_initialize() {
 
     client.initialize(&admin, &buyer, &total_amount, &end_time);
     assert_eq!(admin, client.admin());
-    // TODO: getters for other fields?
+}
+
+#[test]
+fn test_initialize_invalid_end_time() {
+    let env = Env::default();
+    let contract_id = env.register_contract(None, TokenizedCertificate);
+    let client = TokenizedCertificateClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let total_amount: u32 = 1000000;
+    let timestamp = 1672531200; // 2023-01-01 00:00:00 UTC+0
+    set_ledger_timestamp(&env, timestamp);
+
+    let end_time = timestamp - 86400;
+    let res = client.try_initialize(&admin, &buyer, &total_amount, &end_time);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
 }
 
 #[test]
@@ -43,7 +64,6 @@ fn test_mint_original() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #2)")]
 fn test_mint_original_twice() {
     let env = Env::default();
     env.mock_all_auths();
@@ -55,7 +75,63 @@ fn test_mint_original_twice() {
     client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(to, client.owner(&0));
 
-    client.mint_original(&to, &String::from_str(&env, "a")); // should panic
+    let res = client.try_mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotEmpty as u32
+        )))
+    );
+}
+
+#[test]
+fn test_add_vc() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(client.vc(&0), vec![&env, String::from_str(&env, "a")]);
+
+    // add vc successfully
+    client.add_vc(&0, &String::from_str(&env, "b"));
+    assert_eq!(
+        client.vc(&0),
+        vec![
+            &env,
+            String::from_str(&env, "a"),
+            String::from_str(&env, "b")
+        ]
+    );
+
+    // attempt to add vc with string exceeding length limit of 2048: call should fail
+    let bytes_data: [u8; 2049] = [b'a'; 2049];
+    let long_vc = String::from_bytes(&env, &bytes_data);
+    let res = client.try_add_vc(&0, &long_vc);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::VCStringTooLong as u32
+        )))
+    );
+
+    // add 8 more vcs, resulting in a total of 10 vcs
+    for _ in 0..8 {
+        client.add_vc(&0, &String::from_str(&env, "i"));
+    }
+    assert_eq!(client.vc(&0).len(), 10);
+
+    // attempt to add vc when vc limit is reached: call should fail
+    let res = client.try_add_vc(&0, &String::from_str(&env, "n"));
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::VCListCapacityReached as u32
+        )))
+    );
 }
 
 #[test]
@@ -160,7 +236,6 @@ fn test_split_nested() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #4)")]
 fn test_split_twice() {
     let env = Env::default();
     env.mock_all_auths();
@@ -180,7 +255,8 @@ fn test_split_twice() {
             },
         ],
     );
-    client.split(
+
+    let res = client.try_split(
         &0,
         &vec![
             &env,
@@ -190,11 +266,16 @@ fn test_split_twice() {
             },
         ],
     );
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #6)")]
-fn test_split_exceed() {
+fn test_split_exceed_total() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::generate(&env);
@@ -205,7 +286,7 @@ fn test_split_exceed() {
     client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
-    client.split(
+    let res = client.try_split(
         &0,
         &vec![
             &env,
@@ -219,10 +300,15 @@ fn test_split_exceed() {
             },
         ],
     );
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::AmountTooMuch as u32
+        )))
+    );
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #8)")]
 fn test_split_empty() {
     let env = Env::default();
     env.mock_all_auths();
@@ -232,7 +318,81 @@ fn test_split_empty() {
 
     let to = Address::generate(&env);
     client.mint_original(&to, &String::from_str(&env, "a"));
-    client.split(&0, &vec![&env]);
+    let res = client.try_split(&0, &vec![&env]);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidArgs as u32
+        )))
+    );
+}
+
+#[test]
+fn test_split_minimum_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(1000000, client.amount(&0));
+
+    let res = client.try_split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
+                amount: 99999,
+                to: to.clone(),
+            },
+        ],
+    );
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::SplitAmountTooLow as u32
+        )))
+    );
+}
+
+#[test]
+fn test_split_nested_depth_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(1000000, client.amount(&0));
+
+    // first 5 splits should succeed, 6th split should fail
+    for i in 0..6 {
+        let parent_id = i * 2;
+        let res = client.try_split(
+            &parent_id,
+            &vec![
+                &env,
+                SplitRequest {
+                    amount: 100000,
+                    to: to.clone(),
+                },
+            ],
+        );
+        if i < 5 {
+            assert!(res.is_ok());
+        } else {
+            assert_eq!(
+                res,
+                Err(Ok(Error::from_contract_error(
+                    ContractError::SplitLimitReached as u32
+                )))
+            );
+        }
+    }
 }
 
 #[test]
@@ -292,14 +452,14 @@ fn test_pay_off() {
 #[test]
 fn test_check_expired() {
     let env = Env::default();
-    env.ledger().with_mut(|li| li.timestamp = 1640995200); // 2022-01-01 00:00:00 UTC+0
+    set_ledger_timestamp(&env, 1640995200); // 2022-01-01 00:00:00 UTC+0
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
     assert_eq!(client.check_expired(), false);
 
-    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
+    set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
     assert_eq!(client.check_expired(), true);
 }
 
@@ -341,7 +501,7 @@ fn test_expire_auto_transfer() {
                 to: to3.clone(),
             },
             SplitRequest {
-                amount: 50000,
+                amount: 150000,
                 to: to3.clone(),
             },
         ],
@@ -354,7 +514,7 @@ fn test_expire_auto_transfer() {
     assert_eq!(client.address, client.owner(&5));
     assert_eq!(to2, client.owner(&6));
 
-    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
+    set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
     assert_eq!(client.check_expired(), true);
     assert_eq!(to, client.owner(&2));
     assert_eq!(to2, client.owner(&5));
@@ -385,7 +545,7 @@ fn test_redeem() {
     assert_eq!(client.try_redeem(&0).is_err(), true);
     client.check_paid();
     assert_eq!(client.try_redeem(&0).is_err(), true);
-    env.ledger().with_mut(|li| li.timestamp = 1672617600); // 2023-01-02 00:00:00 UTC +0
+    set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
     client.check_expired();
 
     assert_eq!(ext_client.balance(&supplier), 0);

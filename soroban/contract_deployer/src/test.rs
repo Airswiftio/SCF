@@ -2,7 +2,7 @@
 use crate::contract::{Deployer, DeployerClient};
 use soroban_sdk::{
     testutils::{Address as _, BytesN as _},
-    token, vec, Address, BytesN, Env, IntoVal, Symbol,
+    vec, Address, BytesN, Env, IntoVal, Symbol,
 };
 
 mod tc_contract {

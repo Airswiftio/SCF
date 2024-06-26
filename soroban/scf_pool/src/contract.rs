@@ -2,16 +2,11 @@ use crate::admin::{has_administrator, read_administrator, write_administrator};
 use crate::error::Error;
 use crate::event;
 use crate::interface::OfferPoolTrait;
-use crate::offer::{change_offer, check_offer, read_offer, write_offer};
-use crate::pool_token::{
-    add_pool_token, create_contract, get_pool_token, read_ext_token, read_pool_tokens,
-    read_wasm_hash, write_ext_token, write_wasm_hash,
-};
+use crate::offer::{change_offer, increment_supply, read_offer, read_supply, write_offer};
+use crate::pool_token::{has_ext_token, read_ext_tokens, write_ext_tokens};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
-use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env, IntoVal, Map, Val,
-};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, Vec};
 
 mod tc {
     soroban_sdk::contractimport!(
@@ -24,12 +19,11 @@ pub struct OfferPool;
 
 #[contractimpl]
 impl OfferPoolTrait for OfferPool {
-    fn initialize(e: Env, admin: Address, token_wasm_hash: BytesN<32>) {
+    fn initialize(e: Env, admin: Address) {
         if has_administrator(&e) {
             panic!("already initialized")
         }
         write_administrator(&e, &admin);
-        write_wasm_hash(&e, token_wasm_hash);
     }
 
     fn admin(env: Env) -> Address {
@@ -50,110 +44,88 @@ impl OfferPoolTrait for OfferPool {
         event::set_admin(&env, admin, new_admin);
     }
 
-    fn add_pool_token(e: Env, ext_token: Address) -> Address {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+    fn add_ext_token(e: Env, ext_token_address: Address) {
         let admin = read_administrator(&e);
         admin.require_auth();
 
-        let tokens = read_pool_tokens(&e);
-        if tokens.contains_key(ext_token.clone()) {
-            panic_with_error!(&e, Error::TokenExists);
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let mut token_list = read_ext_tokens(&e);
+        if token_list.contains_key(ext_token_address.clone()) {
+            return;
         }
-
-        let ext_client = token::Client::new(&e, &ext_token);
-
-        let token_wasm_hash = read_wasm_hash(&e);
-        let pool_token = create_contract(&e, token_wasm_hash, &ext_token);
-
-        e.invoke_contract::<Val>(
-            &pool_token,
-            &"initialize".into_val(&e),
-            vec![
-                &e,
-                e.current_contract_address().into_val(&e),
-                ext_client.decimals().into_val(&e),
-                "Pool Token".into_val(&e),
-                "SPT".into_val(&e),
-            ],
-        );
-
-        add_pool_token(&e, &ext_token, &pool_token);
-        write_ext_token(&e, &pool_token, &ext_token);
-        pool_token
+        token_list.set(ext_token_address.clone(), ());
+        write_ext_tokens(&e, token_list);
     }
 
-    fn get_pool_tokens(e: Env) -> Map<Address, Address> {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_pool_tokens(&e)
-    }
+    fn remove_ext_token(e: Env, ext_token_address: Address) {
+        let admin = read_administrator(&e);
+        admin.require_auth();
 
-    fn deposit(e: Env, from: Address, ext_token: Address, amount: i128) {
-        from.require_auth();
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        let pool_token = get_pool_token(&e, &ext_token);
-
-        // Transfer select ext token from "from" to the contract address
-        let client = token::Client::new(&e, &ext_token);
-        client.transfer(&from, &e.current_contract_address(), &amount);
-
-        // Mint the equal amount number of liquidity tokens to 'from'
-        token::StellarAssetClient::new(&e, &pool_token).mint(&from, &amount);
-        event::deposit(&e, from, ext_token, pool_token, amount);
+        let mut token_list = read_ext_tokens(&e);
+        if !token_list.contains_key(ext_token_address.clone()) {
+            return;
+        }
+        token_list.remove(ext_token_address.clone());
+        write_ext_tokens(&e, token_list);
     }
 
-    fn withdraw(e: Env, from: Address, pool_token: Address, amount: i128) {
-        from.require_auth();
+    fn get_ext_tokens(e: Env) -> Vec<Address> {
         e.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        let ext_token = read_ext_token(&e, &pool_token);
-
-        // Burn the specified number of liquidity tokens from "from"
-        token::Client::new(&e, &pool_token).burn(&from, &amount);
-
-        // Transfer ext token from the contract address to "from"
-        token::Client::new(&e, &ext_token).transfer(&e.current_contract_address(), &from, &amount);
-        event::withdraw(&e, from, ext_token, pool_token, amount);
+        let token_list = read_ext_tokens(&e);
+        token_list.keys()
     }
 
     fn create_offer(
         e: Env,
         from: Address,
-        offer_id: i128,
-        pool_token: Address,
+        ext_token: Address,
         amount: i128,
         tc_contract: Address,
         tc_id: i128,
-    ) {
-        if check_offer(&e, offer_id) {
-            panic_with_error!(&e, Error::OfferExist);
-        } else {
-            e.storage()
-                .instance()
-                .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-            // Transfer the offer amount to the contract address until the offer is accepted or expired.
-            let token_client = token::Client::new(&e, &pool_token);
-            from.require_auth();
-            token_client.transfer(&from, &e.current_contract_address(), &amount);
-            write_offer(
-                &e,
-                offer_id,
-                from.clone(),
-                pool_token,
-                amount,
-                tc_contract,
-                tc_id,
-            );
-            event::create_offer(&e, from, offer_id, amount);
+    ) -> i128 {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        if !has_ext_token(&e, ext_token.clone()) {
+            panic_with_error!(&e, Error::TokenNotSupported);
         }
+        // Transfer the offer amount to the contract address until the offer is accepted or expired.
+        let token_client = token::Client::new(&e, &ext_token);
+        let tc_client = tc::Client::new(&e, &tc_contract);
+
+        // calling the contract to check if offer is disabled
+        if tc_client.is_disabled(&tc_id) {
+            panic_with_error!(&e, Error::TCDisabled);
+        }
+
+        from.require_auth();
+        token_client.transfer(&from, &e.current_contract_address(), &amount);
+
+        let offer_id = read_supply(&e);
+
+        write_offer(
+            &e,
+            offer_id,
+            from.clone(),
+            ext_token,
+            amount,
+            tc_contract,
+            tc_id,
+        );
+
+        increment_supply(&e);
+        event::create_offer(&e, from, offer_id, amount);
+        return offer_id;
     }
 
     // Cancels an offer and returns the offered amount to the owner. Callable by the admin or offer owner.
@@ -214,7 +186,9 @@ impl OfferPoolTrait for OfferPool {
 
                 let token_client = token::Client::new(&e, &offer.pool_token);
                 let tc_client = tc::Client::new(&e, &tc_contract);
-
+                if tc_client.is_disabled(&tc_id) {
+                    panic_with_error!(&e, Error::TCDisabled);
+                }
                 to.require_auth();
                 tc_client.transfer(&to, &from, &tc_id);
 
@@ -225,12 +199,5 @@ impl OfferPoolTrait for OfferPool {
             }
             None => panic_with_error!(&e, Error::OfferEmpty),
         }
-    }
-
-    fn get_ext_token(e: Env, pool_token: Address) -> Address {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_ext_token(&e, &pool_token)
     }
 }

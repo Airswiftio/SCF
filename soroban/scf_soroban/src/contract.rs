@@ -5,7 +5,7 @@ use crate::errors::Error;
 use crate::event;
 use crate::interface::TokenizedCertificateTrait;
 use crate::metadata::{read_external_token, write_external_token};
-use crate::order_info::{read_buyer_address, read_total_amount, write_order_info};
+use crate::order_info::{read_order_info, write_order_info};
 use crate::order_state::{read_paid, update_and_read_expired, write_paid};
 use crate::owner::{
     add_vc, check_owner, read_all_owned, read_owner, read_recipient, read_vc, write_owner,
@@ -32,7 +32,9 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         if has_administrator(&e) {
             panic!("already initialized")
         }
-
+        if end_time <= e.ledger().timestamp() {
+            panic_with_error!(&e, Error::NotPermitted);
+        }
         write_administrator(&e, &admin);
         //write_name(&e, &name);
         //write_symbol(&e, &symbol);
@@ -66,6 +68,17 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
 
         write_approval(&env, id, Some(operator.clone()));
         event::approve(&env, operator, id);
+    }
+
+    fn del_appr(env: Env, owner: Address, id: i128) {
+        owner.require_auth();
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        check_owner(&env, &owner, id);
+
+        write_approval(&env, id, None);
+        event::remove_approve(&env, id);
     }
 
     fn appr_all(env: Env, owner: Address, operator: Address, approved: bool) {
@@ -104,7 +117,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let sub_tc = read_sub_tc(&env, id);
-        sub_tc.root
+        sub_tc.parent
     }
 
     fn owner(env: Env, id: i128) -> Address {
@@ -144,6 +157,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         update_and_read_expired(&env);
         check_owner(&env, &from, id);
         from.require_auth();
+        write_approval(&env, id, None);
         write_owner(&env, id, Some(to.clone()));
         event::transfer(&env, from, to, id);
     }
@@ -180,10 +194,10 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         if id != 0 {
             panic_with_error!(&env, Error::NotEmpty);
         }
-        let amount = read_total_amount(&env);
+        let amount = read_order_info(&env).total_amount;
         write_owner(&env, id, Some(to.clone()));
-        write_sub_tc(&env, id, id, amount);
-        write_vc(&env, id, vec![&env, vc]);
+        write_sub_tc(&env, id, id, 0, amount);
+        add_vc(&env, id, vc);
         write_sub_tc_disabled(&env, id, false);
         increment_supply(&env);
 
@@ -222,20 +236,28 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         owner.require_auth();
         let contract_addr = env.current_contract_address();
 
-        let root = read_sub_tc(&env, id);
+        let parent = read_sub_tc(&env, id);
+        if parent.depth >= 5 {
+            panic_with_error!(&env, Error::SplitLimitReached);
+        }
         let mut sum = 0;
+        let root_total = read_order_info(&env).total_amount;
         for req in splits.clone() {
+            // each split must be at least 10% of the root total_amount
+            if req.amount * 10 < root_total {
+                panic_with_error!(&env, Error::SplitAmountTooLow);
+            }
             sum += req.amount;
         }
-        if sum > root.amount {
+        if sum > parent.amount {
             panic_with_error!(&env, Error::AmountTooMuch);
         }
 
-        let mut remaining = root.amount;
+        let mut remaining = parent.amount;
         let mut new_ids = Vec::new(&env);
         for req in splits.clone() {
             let new_id = read_supply(&env);
-            write_sub_tc(&env, new_id, id, req.amount);
+            write_sub_tc(&env, new_id, id, parent.depth + 1, req.amount);
             write_sub_tc_disabled(&env, new_id, false);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
@@ -248,7 +270,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         // if root amount > 0, create another sub tc to represent the remaining amount belonging to original owner
         if remaining > 0 {
             let new_id = read_supply(&env);
-            write_sub_tc(&env, new_id, id, remaining);
+            write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
             write_sub_tc_disabled(&env, new_id, false);
             write_owner(&env, new_id, Some(owner.clone()));
             write_vc(&env, new_id, vec![&env]);
@@ -348,10 +370,10 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         }
         let ext_token = read_external_token(&env);
         let client = token::Client::new(&env, &ext_token.contract_addr);
-        let base_amount = read_total_amount(&env);
-        let amount = i128::from(base_amount) * 10i128.pow(ext_token.decimals);
+        let order_info = read_order_info(&env);
+        let amount = i128::from(order_info.total_amount) * 10i128.pow(ext_token.decimals);
 
-        if from != read_buyer_address(&env) {
+        if from != order_info.buyer_address {
             panic_with_error!(&env, Error::NotAuthorized);
         }
         from.require_auth();

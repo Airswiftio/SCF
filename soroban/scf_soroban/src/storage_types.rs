@@ -24,11 +24,7 @@ pub enum ApprovalKey {
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    Nonce(Address),
-    Minted(Address),
     Admin,
-    Name,
-    Symbol,
     Approval(ApprovalKey),
     Owner(i128),
     Disabled(i128),
@@ -45,7 +41,8 @@ pub enum DataKey {
 #[derive(Clone)]
 #[contracttype]
 pub struct SubTC {
-    pub root: i128,
+    pub parent: i128,
+    pub depth: u32,
     pub amount: u32,
 }
 

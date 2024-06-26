@@ -1,7 +1,7 @@
 #![cfg(any(test, feature = "testutils"))]
 
 use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
-use soroban_sdk::{testutils::Ledger, token, Address, Env};
+use soroban_sdk::{testutils::Ledger, token, Address, BytesN, Env};
 
 pub fn setup_test_tc_contract<'a>(
     e: &Env,
@@ -29,4 +29,10 @@ pub fn setup_test_token<'a>(
 
 pub fn set_ledger_timestamp(e: &Env, timestamp: u64) {
     e.ledger().with_mut(|li| li.timestamp = timestamp);
+}
+
+pub fn pad_bytes_32(e: &Env, data: &[u8]) -> BytesN<32> {
+    let mut padded = [0u8; 32];
+    padded[..data.len()].copy_from_slice(data);
+    BytesN::from_array(e, &padded)
 }
