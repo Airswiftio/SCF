@@ -4,7 +4,6 @@
         "soroban/argentina_pool/Cargo.toml",
         "soroban/contract_deployer/Cargo.toml",
         "soroban/scf_pool/Cargo.toml",
-        "soroban/scf_soroban/Cargo.toml",
-        "soroban/token/Cargo.toml"
+        "soroban/scf_soroban/Cargo.toml"
     ]
 }

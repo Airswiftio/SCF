@@ -201,44 +201,21 @@ impl LiquidityPoolTrait for LiquidityPool {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
-        // transfer liquidity tokens from caller (borrower) to smart contract
+        // transfer liquidity tokens from caller (borrower) to creditor
         // pool fee_percent is the additional percentage fee needed to pay off the loan.
         transfer_scaled(
             &e,
             loan.borrower.clone(),
-            e.current_contract_address(),
+            loan.creditor.clone(),
             loan.amount,
             loan.fee_percent,
         );
-
-        // update loan info
-        loan.status = LoanStatus::Paid;
-        write_loan(&e, offer_id, loan);
-    }
-
-    fn close_loan(e: Env, offer_id: u64) {
-        let mut loan = read_loan(&e, offer_id);
-        if loan.status != LoanStatus::Paid {
-            panic_with_error!(&e, Error::InvalidStatus);
-        }
-        loan.creditor.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
 
         // transfer the TC from smart contract to borrower
         tc_contract::Client::new(&e, &loan.tc_address).transfer(
             &e.current_contract_address(),
             &loan.borrower,
             &loan.tc_id,
-        );
-        // return funds from smart contract to creditor
-        transfer_scaled(
-            &e,
-            e.current_contract_address(),
-            loan.creditor.clone(),
-            loan.amount,
-            loan.fee_percent,
         );
 
         // update loan info

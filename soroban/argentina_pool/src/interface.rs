@@ -42,14 +42,10 @@ pub trait LiquidityPoolTrait {
     /// Transfers the TC to the creditor, and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller.
     fn accept_loan_offer(e: Env, from: Address, offer_id: u64);
 
-    /// Pay off a loan. The caller (borrower) transfers liquidity tokens to the smart contract.
+    /// Pay off a loan by returning the TC from the smart contract to the borrower, then sending the liquidity tokens from the borrower back to the creditor.
     /// If the contract's fee percentage is greater than 0, the amount of liquidity tokens required to pay off is higher than the original amount.
     /// The loan offer must be accepted prior to this step.
     fn payoff_loan(e: Env, offer_id: u64);
-
-    /// Close a loan by returning the TC from the creditor to the borrower, then sending the liquidity tokens from the smart contract back to the creditor.
-    /// Payoff must be completed prior to this step.
-    fn close_loan(e: Env, offer_id: u64);
 
     /// Get the fee percentage associated with a loan.
     fn get_loan_fee(e: Env, offer_id: u64) -> u32;

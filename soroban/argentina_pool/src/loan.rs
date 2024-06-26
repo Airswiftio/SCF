@@ -10,9 +10,8 @@ use soroban_sdk::{contracttype, panic_with_error, Address, Env, Map};
 pub enum LoanStatus {
     Pending = 0,
     Active = 1,
-    Paid = 2,
-    Closed = 3,
-    Defaulted = 4,
+    Closed = 2,
+    Defaulted = 3,
 }
 
 #[derive(Clone)]
