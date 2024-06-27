@@ -18,24 +18,6 @@ pub trait TokenizedCertificateTrait {
     // Token interface
     // --------------------------------------------------------------------------------
 
-    /// Allows "operator" to manage token "id" if "owner" is the current owner of token "id".
-    /// Emit event with topics = ["appr", operator: Address], data = [id: i128]
-    fn appr(env: Env, owner: Address, operator: Address, id: i128);
-
-    /// disable "operator" right to manage token "id" if "owner" is the current owner of token "id".
-    /// Emit event with topics = ["appr", operator: Address], data = [id: i128]
-    fn del_appr(env: Env, owner: Address, id: i128);
-
-    /// If "approved", allows "operator" to manage all tokens of "owner"
-    /// Emit event with topics = ["appr_all", operator: Address], data = [owner: Address]
-    fn appr_all(env: Env, owner: Address, operator: Address, approved: bool);
-
-    /// Returns the identifier approved for token "id".
-    fn get_appr(env: Env, id: i128) -> Address;
-
-    /// If "operator" is allowed to manage assets of "owner", return true.
-    fn is_appr(env: Env, owner: Address, operator: Address) -> bool;
-
     /// Get the amount associated with "id".
     fn amount(env: Env, id: i128) -> u32;
 
@@ -57,10 +39,6 @@ pub trait TokenizedCertificateTrait {
     /// Transfer token "id" from "from" to "to.
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
     fn transfer(env: Env, from: Address, to: Address, id: i128);
-
-    /// Transfer token "id" from "from" to "to", consuming the allowance of "spender".
-    /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
-    fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128);
 
     /// Mint the root-level TC. Will fail if the root-level TC already exists.
     /// The minted TC has a value corresponding to the "total_amount" specified in the initialize() function.

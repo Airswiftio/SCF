@@ -45,7 +45,7 @@ pub trait OfferPoolTrait {
     /// If offer is not found, will return a error for empty offer.
     fn get_offer(e: Env, offer_id: i128) -> Offer;
 
-    /// Accept an offer. The caller (to) must own the TC or have approval to transfer it.
+    /// Accept an offer. The caller (to) must own the TC.
     /// Transfers the TC to the creditor (from in the offer), and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller (to).
     /// Emit event with topics = ["accept_offer", to: Address, amount:i128 ], data = [offer_id: i128]
     fn accept_offer(e: Env, to: Address, offer_id: i128);

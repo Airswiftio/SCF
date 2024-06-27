@@ -1,5 +1,4 @@
 use crate::admin::{has_administrator, read_administrator, write_administrator};
-use crate::approval::{read_approval, read_approval_all, write_approval, write_approval_all};
 use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
@@ -59,51 +58,6 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&env, admin, new_admin);
     }
 
-    fn appr(env: Env, owner: Address, operator: Address, id: i128) {
-        owner.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        check_owner(&env, &owner, id);
-
-        write_approval(&env, id, Some(operator.clone()));
-        event::approve(&env, operator, id);
-    }
-
-    fn del_appr(env: Env, owner: Address, id: i128) {
-        owner.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        check_owner(&env, &owner, id);
-
-        write_approval(&env, id, None);
-        event::remove_approve(&env, id);
-    }
-
-    fn appr_all(env: Env, owner: Address, operator: Address, approved: bool) {
-        owner.require_auth();
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        write_approval_all(&env, owner.clone(), operator.clone(), approved);
-        event::approve_all(&env, operator, owner)
-    }
-
-    fn get_appr(env: Env, id: i128) -> Address {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_approval(&env, id)
-    }
-
-    fn is_appr(env: Env, owner: Address, operator: Address) -> bool {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_approval_all(&env, owner, operator)
-    }
-
     fn amount(env: Env, id: i128) -> u32 {
         env.storage()
             .instance()
@@ -157,30 +111,8 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         update_and_read_expired(&env);
         check_owner(&env, &from, id);
         from.require_auth();
-        write_approval(&env, id, None);
         write_owner(&env, id, Some(to.clone()));
         event::transfer(&env, from, to, id);
-    }
-
-    fn transfer_from(env: Env, spender: Address, from: Address, to: Address, id: i128) {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        update_and_read_expired(&env);
-        check_owner(&env, &from, id);
-        spender.require_auth();
-
-        if read_approval_all(&env, from.clone(), spender.clone())
-            || spender == read_approval(&env, id)
-        {
-            write_approval(&env, id, None);
-
-            write_owner(&env, id, Some(to.clone()));
-
-            event::transfer(&env, from, to, id);
-        } else {
-            panic_with_error!(&env, Error::NotAuthorized)
-        }
     }
 
     fn mint_original(env: Env, to: Address, vc: String) {

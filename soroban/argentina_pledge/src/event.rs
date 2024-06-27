@@ -19,18 +19,3 @@ pub(crate) fn burn(e: &Env, from: Address, id: u64) {
     let topics = (symbol_short!("burn"), from);
     e.events().publish(topics, id);
 }
-
-pub(crate) fn approve(e: &Env, operator: Address, id: u64) {
-    let topics = (symbol_short!("appr"), operator);
-    e.events().publish(topics, id);
-}
-
-pub(crate) fn remove_approve(e: &Env, id: u64) {
-    let topics = (symbol_short!("del_appr"),);
-    e.events().publish(topics, id);
-}
-
-pub(crate) fn approve_all(e: &Env, operator: Address, owner: Address) {
-    let topics = (symbol_short!("appr_all"), operator);
-    e.events().publish(topics, owner);
-}

@@ -2,7 +2,6 @@ use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Byte
 
 use crate::{
     admin::{has_admin, read_admin, write_admin},
-    approval::{read_approval, read_approval_all, write_approval, write_approval_all},
     balance::{increment_supply, read_supply},
     errors::Error,
     event,
@@ -82,73 +81,8 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         check_owner(&e, &from, id);
-        write_approval(&e, id, None);
         write_owner(&e, id, Some(to.clone()));
         event::transfer(&e, from, to, id);
-    }
-
-    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, id: u64) {
-        spender.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        check_owner(&e, &from, id);
-
-        if read_approval_all(&e, from.clone(), spender.clone()) || spender == read_approval(&e, id)
-        {
-            write_approval(&e, id, None);
-
-            write_owner(&e, id, Some(to.clone()));
-
-            event::transfer(&e, from, to, id);
-        } else {
-            panic_with_error!(&e, Error::NotAuthorized)
-        }
-    }
-
-    fn appr(e: Env, owner: Address, operator: Address, id: u64) {
-        owner.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        check_owner(&e, &owner, id);
-
-        write_approval(&e, id, Some(operator.clone()));
-        event::approve(&e, operator, id);
-    }
-
-    fn del_appr(e: Env, owner: Address, id: u64) {
-        owner.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        check_owner(&e, &owner, id);
-
-        write_approval(&e, id, None);
-        event::remove_approve(&e, id);
-    }
-
-    fn appr_all(e: Env, owner: Address, operator: Address, approved: bool) {
-        owner.require_auth();
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        write_approval_all(&e, owner.clone(), operator.clone(), approved);
-        event::approve_all(&e, operator, owner)
-    }
-
-    fn get_appr(e: Env, id: u64) -> Address {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_approval(&e, id)
-    }
-
-    fn is_appr(e: Env, owner: Address, operator: Address) -> bool {
-        e.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        read_approval_all(&e, owner, operator)
     }
 
     fn pledge(e: Env, from: Address, id: u64) {

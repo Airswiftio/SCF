@@ -38,7 +38,7 @@ pub trait LiquidityPoolTrait {
     /// Transfers the liquidity tokens back to the caller.
     fn cancel_loan_offer(e: Env, offer_id: u64);
 
-    /// Accept a loan offer. The caller (borrower) must own the TC or have approval to transfer it.
+    /// Accept a loan offer. The caller (borrower) must own the TC.
     /// Transfers the TC to the creditor, and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller.
     fn accept_loan_offer(e: Env, from: Address, offer_id: u64);
 

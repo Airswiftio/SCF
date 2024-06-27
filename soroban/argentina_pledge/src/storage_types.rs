@@ -16,20 +16,6 @@ pub struct ExtTokenInfo {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct ApprovalAll {
-    pub operator: Address,
-    pub owner: Address,
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub enum ApprovalKey {
-    All(ApprovalAll),
-    ID(u64),
-}
-
-#[derive(Clone)]
-#[contracttype]
 pub enum DataKey {
     Admin,
     ExtToken,
@@ -38,5 +24,4 @@ pub enum DataKey {
     Amount(u64),
     RedeemTime(u64),
     Owner(u64),
-    Approval(ApprovalKey),
 }

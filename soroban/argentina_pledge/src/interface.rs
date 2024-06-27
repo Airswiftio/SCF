@@ -27,28 +27,6 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: u64]
     fn transfer(e: Env, from: Address, to: Address, id: u64);
 
-    /// Transfer token 'id' between specified 'from' and 'to' addresses, consuming the allowance of "spender".
-    /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: u64]
-    fn transfer_from(e: Env, spender: Address, from: Address, to: Address, id: u64);
-
-    /// Allows "operator" to manage token "id" if "owner" is the current owner of token "id".
-    /// Emit event with topics = ["appr", operator: Address], data = [id: u64]
-    fn appr(e: Env, owner: Address, operator: Address, id: u64);
-
-    /// Resets the approval for token "id" if "owner" is the current owner of token "id".
-    /// Emit event with topics = ["appr", operator: Address], data = [id: u64]
-    fn del_appr(env: Env, owner: Address, id: u64);
-
-    /// If "approved", allows "operator" to manage all tokens of "owner"
-    /// Emit event with topics = ["appr_all", operator: Address], data = [owner: Address]
-    fn appr_all(e: Env, owner: Address, operator: Address, approved: bool);
-
-    /// Returns the identifier approved for token "id".
-    fn get_appr(e: Env, id: u64) -> Address;
-
-    /// If "operator" is allowed to manage assets of "owner", return true.
-    fn is_appr(e: Env, owner: Address, operator: Address) -> bool;
-
     /// Transfers USDC to the contract address, and transfers ownership of the TC to the caller.
     fn pledge(e: Env, from: Address, id: u64);
 

@@ -1,7 +1,6 @@
 #![no_std]
 
 mod admin;
-mod approval;
 mod balance;
 mod contract;
 mod errors;

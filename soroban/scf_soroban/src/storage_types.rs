@@ -9,23 +9,8 @@ pub(crate) const BALANCE_LIFETIME_THRESHOLD: u32 = BALANCE_BUMP_AMOUNT - DAY_IN_
 
 #[derive(Clone)]
 #[contracttype]
-pub struct ApprovalAll {
-    pub operator: Address,
-    pub owner: Address,
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub enum ApprovalKey {
-    All(ApprovalAll),
-    ID(i128),
-}
-
-#[derive(Clone)]
-#[contracttype]
 pub enum DataKey {
     Admin,
-    Approval(ApprovalKey),
     Owner(i128),
     Disabled(i128),
     Supply,
