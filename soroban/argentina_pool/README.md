@@ -15,6 +15,5 @@
 4. The owner of the TC (borrower) can accept using `accept_loan_offer`. This transfers the external tokens to the borrower and transfers ownership of the TC to the smart contract during the duration of the loan.
 5. The borrower is now able to freely use the external tokens during the duration of the loan. 
 6. Upon the end of the loan period, there are two options.
-    * Normal operation: The borrower must use `payoff_loan` to send external tokens to the smart contract before they are able to get their TC back. If the loan fee percentage is greater than 0, the borrower must pay back more external tokens than they originally received from the creditor. 
+    * Normal operation: The borrower must use `payoff_loan` to send external tokens to the creditor, receiving their originally owned TC in return. If the loan fee percentage is greater than 0, the borrower must pay back more external tokens than they originally received from the creditor. 
     * Loan default: If the loan still hasn't been paid back (a grace period may be applicable, depending on the external system using this smart contract), the admin can call `default_loan` to transfer the borrowed TC to the creditor. The creditor can then redeem the TC to recover their funds.
-7. If the loan was paid off, the creditor calls `close_loan` to return the TC to the borrower and receive the number of external tokens paid during `payoff_loan`. 
