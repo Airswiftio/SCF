@@ -13,6 +13,7 @@ pub struct Offer {
     pub from: Address,
     pub pool_token: Address,
     pub amount: i128,
+    pub fee: i128,
     pub tc_contract: Address,
     pub tc_id: i128,
     pub status: i128,

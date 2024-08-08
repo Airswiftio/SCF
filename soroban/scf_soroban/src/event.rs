@@ -5,6 +5,11 @@ pub(crate) fn set_admin(e: &Env, admin: Address, new_admin: Address) {
     e.events().publish(topics, new_admin);
 }
 
+pub(crate) fn loan(e: &Env, id: i128, status: u32) {
+    let topics = (symbol_short!("loan"), id);
+    e.events().publish(topics, status);
+}
+
 pub(crate) fn transfer(e: &Env, from: Address, to: Address, id: i128) {
     let topics = (symbol_short!("transfer"), from, to);
     e.events().publish(topics, id);

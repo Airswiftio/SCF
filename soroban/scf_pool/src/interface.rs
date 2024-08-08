@@ -26,12 +26,13 @@ pub trait OfferPoolTrait {
     // --------------------------------------------------------------------------------
 
     /// Create an offer against a TC. The caller (from) transfers liquidity tokens to the smart contract equal to the value of the TC.
-    /// Emit event with topics = ["create_offer", from: Address, amount: i128], data = [offer_id: i128]
+    /// Emit event with topics = ["create_offer", from: Address, amount: i128, fee: i128], data = [offer_id: i128]
     fn create_offer(
         e: Env,
         from: Address,
         ext_token: Address,
         amount: i128,
+        fee: i128,
         tc_contract: Address,
         tc_id: i128,
     ) -> i128;
@@ -46,7 +47,7 @@ pub trait OfferPoolTrait {
     fn get_offer(e: Env, offer_id: i128) -> Offer;
 
     /// Accept an offer. The caller (to) must own the TC.
-    /// Transfers the TC to the creditor (from in the offer), and liquidity tokens equal to the associated TC's value are sent from the smart contract to the caller (to).
+    /// Transfers the TC to the creditor ("from" in the offer), and liquidity tokens equal to the offer amount are sent from the smart contract to the caller ("to").
     /// Emit event with topics = ["accept_offer", to: Address, amount:i128 ], data = [offer_id: i128]
     fn accept_offer(e: Env, to: Address, offer_id: i128);
 

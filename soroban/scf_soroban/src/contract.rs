@@ -11,7 +11,10 @@ use crate::owner::{
     write_recipient, write_vc,
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use crate::sub_tc::{read_sub_tc, read_sub_tc_disabled, write_sub_tc, write_sub_tc_disabled};
+use crate::sub_tc::{
+    read_loan_status, read_sub_tc, read_sub_tc_disabled, write_loan_status, write_sub_tc,
+    write_sub_tc_disabled,
+};
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, token, vec, Address, Env, String, Vec,
 };
@@ -58,6 +61,17 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&env, admin, new_admin);
     }
 
+    fn set_loan_status(env: Env, id: i128, status: u32) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let admin = read_administrator(&env);
+        admin.require_auth();
+
+        write_loan_status(&env, id, status);
+        event::loan(&env, id, status);
+    }
+
     fn amount(env: Env, id: i128) -> u32 {
         env.storage()
             .instance()
@@ -87,6 +101,13 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         read_vc(&env, id)
+    }
+
+    fn loan_status(env: Env, id: i128) -> u32 {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_loan_status(&env, id)
     }
 
     fn get_all_owned(env: Env, address: Address) -> Vec<i128> {
@@ -131,6 +152,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         write_sub_tc(&env, id, id, 0, amount);
         add_vc(&env, id, vc);
         write_sub_tc_disabled(&env, id, false);
+        write_loan_status(&env, id, 0);
         increment_supply(&env);
 
         event::mint(&env, to, id)
@@ -164,6 +186,9 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         if update_and_read_expired(&env) {
             panic_with_error!(&env, Error::NotPermitted);
         }
+        if read_loan_status(&env, id) != 0 {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
         let owner = read_owner(&env, id);
         owner.require_auth();
         let contract_addr = env.current_contract_address();
@@ -191,6 +216,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             let new_id = read_supply(&env);
             write_sub_tc(&env, new_id, id, parent.depth + 1, req.amount);
             write_sub_tc_disabled(&env, new_id, false);
+            write_loan_status(&env, id, 0);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
             write_vc(&env, new_id, vec![&env]);
@@ -204,6 +230,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             let new_id = read_supply(&env);
             write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
             write_sub_tc_disabled(&env, new_id, false);
+            write_loan_status(&env, id, 0);
             write_owner(&env, new_id, Some(owner.clone()));
             write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
@@ -221,7 +248,11 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        if !update_and_read_expired(&env) || !read_paid(&env) || read_sub_tc_disabled(&env, id) {
+        if !update_and_read_expired(&env)
+            || !read_paid(&env)
+            || read_sub_tc_disabled(&env, id)
+            || read_loan_status(&env, id) == 1
+        {
             panic_with_error!(&env, Error::NotPermitted);
         }
 

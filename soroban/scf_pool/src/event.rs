@@ -5,8 +5,8 @@ pub(crate) fn set_admin(e: &Env, admin: Address, new_admin: Address) {
     e.events().publish(topics, new_admin);
 }
 
-pub fn create_offer(e: &Env, from: Address, offer_id: i128, amount: i128) {
-    let topics = (symbol_short!("create"), from, amount);
+pub fn create_offer(e: &Env, from: Address, offer_id: i128, amount: i128, fee: i128) {
+    let topics = (symbol_short!("create"), from, amount, fee);
     e.events().publish(topics, offer_id.clone());
 }
 

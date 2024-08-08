@@ -90,6 +90,7 @@ impl OfferPoolTrait for OfferPool {
         from: Address,
         ext_token: Address,
         amount: i128,
+        fee: i128,
         tc_contract: Address,
         tc_id: i128,
     ) -> i128 {
@@ -119,12 +120,13 @@ impl OfferPoolTrait for OfferPool {
             from.clone(),
             ext_token,
             amount,
+            fee,
             tc_contract,
             tc_id,
         );
 
         increment_supply(&e);
-        event::create_offer(&e, from, offer_id, amount);
+        event::create_offer(&e, from, offer_id, amount, fee);
         return offer_id;
     }
 
@@ -188,6 +190,9 @@ impl OfferPoolTrait for OfferPool {
                 let tc_client = tc::Client::new(&e, &tc_contract);
                 if tc_client.is_disabled(&tc_id) {
                     panic_with_error!(&e, Error::TCDisabled);
+                }
+                if tc_client.loan_status(&tc_id) != 1 {
+                    panic_with_error!(&e, Error::TCNotLoaned);
                 }
                 to.require_auth();
                 tc_client.transfer(&to, &from, &tc_id);

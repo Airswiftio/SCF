@@ -32,13 +32,15 @@ pub fn write_offer(
     from: Address,
     pool_token: Address,
     amount: i128,
+    fee: i128,
     tc_contract: Address,
     tc_id: i128,
 ) {
     let input_offer = Offer {
-        from: from,
+        from,
         pool_token,
-        amount: amount,
+        amount,
+        fee,
         tc_contract,
         tc_id,
         status: 0,

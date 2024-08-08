@@ -14,6 +14,10 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["set_admin", admin: Address], data = [new_admin: Address]
     fn set_admin(env: Env, new_admin: Address);
 
+    /// Set the loan status of a token.
+    /// Emit event with topics = ["set_loan_status", id: i128], data = [status: u32]
+    fn set_loan_status(env: Env, id: i128, status: u32);
+
     // --------------------------------------------------------------------------------
     // Token interface
     // --------------------------------------------------------------------------------
@@ -30,6 +34,9 @@ pub trait TokenizedCertificateTrait {
     /// Get the vc associated with "id".
     fn vc(env: Env, id: i128) -> Vec<String>;
 
+    /// Check the loan status of a token. 0 = no loan, 1 = loan in progress, 2 = paid off.
+    fn loan_status(env: Env, id: i128) -> u32;
+
     /// Get all TC ids owned by address
     fn get_all_owned(env: Env, address: Address) -> Vec<i128>;
 
@@ -45,11 +52,11 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["mint", to: Address], data = [id: i128]
     fn mint_original(env: Env, to: Address, vc: String);
 
-    /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original.
+    /// Split a token into a number of sub-tokens based on the amounts listed. Will fail if the sum of amounts is greater than the original. Cannot be called on a TC marked as "loaned".
     /// Emit event with topics = ["split", from: Address], data = [id: i128, new_ids: Vec<i128>]
     fn split(env: Env, id: i128, splits: Vec<SplitRequest>) -> Vec<i128>;
 
-    /// Burn a specified TC and transfer funds to the owner.
+    /// Burn a specified TC and transfer funds to the owner. Can only be called if the TC's loan status indicates no loan or a paid-off loan.
     /// Emit event with topics = ["burn", owner: Address], data = [id: i128]
     fn redeem(env: Env, id: i128);
 
