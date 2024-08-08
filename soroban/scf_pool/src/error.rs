@@ -12,4 +12,5 @@ pub enum Error {
     TokenNotSupported = 6,
     TCDisabled = 7,
     TCNotLoaned = 8,
+    TCAlreadyLoaned = 9,
 }

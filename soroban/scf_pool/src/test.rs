@@ -132,6 +132,7 @@ fn test_create_offer() {
         &offerer,
         &token_client.address.clone(),
         &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -148,7 +149,13 @@ fn test_create_offer() {
             // Test the event topics
             assert_eq!(
                 topics,
-                (symbol_short!("create"), offerer.clone(), 600000i128).into_val(&e)
+                (
+                    symbol_short!("create"),
+                    offerer.clone(),
+                    600000i128,
+                    20000i128
+                )
+                    .into_val(&e)
             );
 
             // Test the event data
@@ -162,6 +169,7 @@ fn test_create_offer() {
     //test offer information
     assert_eq!(offer.from, offerer);
     assert_eq!(offer.amount, 600000);
+    assert_eq!(offer.fee, 20000);
     assert_eq!(offer.tc_contract, tc_client.address);
     assert_eq!(offer.tc_id, 0);
     assert_eq!(offer.status, 0);
@@ -198,6 +206,7 @@ fn test_create_offer_unsupported_token() {
         &offerer,
         &token_client.address.clone(),
         &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -241,6 +250,7 @@ fn test_create_offer_insufficient_balance() {
         &offerer,
         &token_client.address.clone(),
         &2000000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -289,6 +299,7 @@ fn test_create_offer_disabled_tc() {
         &offerer,
         &token_client.address.clone(),
         &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -296,6 +307,50 @@ fn test_create_offer_disabled_tc() {
         res,
         Err(Ok(Error::from_contract_error(
             ContractError::TCDisabled as u32
+        )))
+    );
+}
+
+#[test]
+fn test_create_offer_loaned_tc() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, _) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+    tc_client.set_loan_status(&0, &1);
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &1000000);
+
+    let res = pool_client.try_create_offer(
+        &offerer,
+        &token_client.address.clone(),
+        &600000,
+        &20000,
+        &tc_client.address,
+        &0,
+    );
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::TCAlreadyLoaned as u32
         )))
     );
 }
@@ -329,7 +384,8 @@ fn test_create_offer_nonexistent_tc() {
     let res = pool_client.try_create_offer(
         &offerer,
         &token_client.address.clone(),
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -343,7 +399,8 @@ fn test_create_offer_nonexistent_tc() {
     let res = pool_client.try_create_offer(
         &offerer,
         &token_client.address.clone(),
-        &1000000,
+        &600000,
+        &20000,
         &random_addr,
         &0,
     );
@@ -377,14 +434,18 @@ fn test_accept_offer() {
     // mint ext token to offerer
     token_admin_client.mint(&offerer, &1000000);
 
-    // create and accept the offer
+    // create the offer
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
+
+    // set loan status to 1, then accept the offer
+    tc_client.set_loan_status(&0, &1);
     pool_client.accept_offer(&supplier, &offer_id);
 
     //Test for the event
@@ -409,7 +470,52 @@ fn test_accept_offer() {
 
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 2);
-    assert_eq!(token_client.balance(&supplier), 1000000)
+    assert_eq!(token_client.balance(&supplier), 600000)
+}
+
+#[test]
+fn test_accept_offer_loan_not_set() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, _) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &1000000);
+
+    // create and accept the offer without setting tc_client.loan_status to 1. Should fail.
+    let offer_id = pool_client.create_offer(
+        &offerer,
+        &token_client.address,
+        &600000,
+        &20000,
+        &tc_client.address,
+        &0,
+    );
+    let res = pool_client.try_accept_offer(&supplier, &offer_id);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::TCNotLoaned as u32
+        )))
+    );
 }
 
 #[test]
@@ -460,10 +566,12 @@ fn test_accept_offer_not_tc_owner() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
+    tc_client.set_loan_status(&0, &1);
     let res = pool_client.try_accept_offer(&other_user, &offer_id);
     assert_eq!(
         res,
@@ -502,10 +610,12 @@ fn test_expire_accepted_offer() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
+    tc_client.set_loan_status(&0, &1);
     pool_client.accept_offer(&supplier, &offer_id);
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 2);
@@ -566,7 +676,8 @@ fn test_expire_offer_as_admin() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -606,7 +717,8 @@ fn test_expire_offer_as_owner() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -665,7 +777,8 @@ fn test_expire_offer_not_owned() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -709,7 +822,8 @@ fn test_accept_expired_offer() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -718,6 +832,7 @@ fn test_accept_expired_offer() {
     assert_eq!(offer.status, 1);
 
     // try to accept an expired offer
+    tc_client.set_loan_status(&0, &1);
     let res = pool_client.try_accept_offer(&supplier, &offer_id);
     assert_eq!(
         res,

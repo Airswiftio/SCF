@@ -104,9 +104,12 @@ impl OfferPoolTrait for OfferPool {
         let token_client = token::Client::new(&e, &ext_token);
         let tc_client = tc::Client::new(&e, &tc_contract);
 
-        // calling the contract to check if offer is disabled
+        // calling the contract to check if TC is disabled or already loaned
         if tc_client.is_disabled(&tc_id) {
             panic_with_error!(&e, Error::TCDisabled);
+        }
+        if tc_client.loan_status(&tc_id) != 0 {
+            panic_with_error!(&e, Error::TCAlreadyLoaned);
         }
 
         from.require_auth();
