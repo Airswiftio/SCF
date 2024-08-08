@@ -618,3 +618,94 @@ fn test_get_all_owned() {
     client.sign_off(&2);
     assert_eq!(vec![&env, 1, 2, 3], client.get_all_owned(&to));
 }
+
+#[test]
+fn test_redeem_loaned() {
+    // setup env with specific timestamp
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    // setup fake external token and pay the contract
+    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
+    ext_admin.mint(&buyer, &10000000000000);
+    let ext_client = TokenClient::new(&env, ext_token_addr);
+    ext_client.mock_all_auths_allowing_non_root_auth();
+
+    let supplier = Address::generate(&env);
+    client.mint_original(&supplier, &String::from_str(&env, "a"));
+    assert_eq!(supplier, client.owner(&0));
+
+    client.set_external_token_provider(&ext_token_addr, &7);
+    set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
+    client.pay_off(&buyer);
+    assert!(client.check_paid());
+    assert!(client.check_expired());
+
+    // redeem should not be possible if loan_status is set to 1
+    client.set_loan_status(&0, &1);
+    let res = client.try_redeem(&0);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
+
+    // redeem should succeed after loan_status is updated to 2
+    client.set_loan_status(&0, &2);
+    client.redeem(&0);
+
+    // check balance was transferred
+    assert_eq!(ext_client.balance(&supplier), 10000000000000);
+
+    // check TC was burned
+    assert_eq!(client.try_owner(&0).is_err(), true)
+}
+
+#[test]
+fn test_split_loaned() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let to = Address::generate(&env);
+    client.mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(1000000, client.amount(&0));
+
+    // split should fail if loan_status is 1
+    client.set_loan_status(&0, &1);
+    let split_params = vec![
+        &env,
+        SplitRequest {
+            amount: 300000,
+            to: to.clone(),
+        },
+    ];
+    let res = client.try_split(&0, &split_params);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
+
+    // split should succeed if loan_status is reset to 0
+    client.set_loan_status(&0, &0);
+    client.split(&0, &split_params);
+
+    assert_eq!(300000, client.amount(&1));
+    assert_eq!(client.address, client.owner(&1));
+    assert_eq!(0, client.parent(&1));
+
+    assert_eq!(700000, client.amount(&2));
+    assert_eq!(to, client.owner(&2));
+    assert_eq!(0, client.parent(&2));
+
+    assert_eq!(true, client.is_disabled(&0));
+}

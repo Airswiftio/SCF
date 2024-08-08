@@ -216,7 +216,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             let new_id = read_supply(&env);
             write_sub_tc(&env, new_id, id, parent.depth + 1, req.amount);
             write_sub_tc_disabled(&env, new_id, false);
-            write_loan_status(&env, id, 0);
+            write_loan_status(&env, new_id, 0);
             write_recipient(&env, new_id, &req.to);
             write_owner(&env, new_id, Some(contract_addr.clone()));
             write_vc(&env, new_id, vec![&env]);
@@ -230,7 +230,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             let new_id = read_supply(&env);
             write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
             write_sub_tc_disabled(&env, new_id, false);
-            write_loan_status(&env, id, 0);
+            write_loan_status(&env, new_id, 0);
             write_owner(&env, new_id, Some(owner.clone()));
             write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
