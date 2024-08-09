@@ -13,4 +13,6 @@ pub enum Error {
     TCDisabled = 7,
     TCNotLoaned = 8,
     TCAlreadyLoaned = 9,
+    RecipientNotFound = 10,
+    InvalidAmount = 11,
 }

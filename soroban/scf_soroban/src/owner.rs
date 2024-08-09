@@ -21,10 +21,17 @@ pub fn read_owner(env: &Env, id: i128) -> Address {
 
 pub fn write_owner(env: &Env, id: i128, owner: Option<Address>) {
     let key = DataKey::Owner(id);
-    env.storage().persistent().set(&key, &owner);
-    env.storage()
-        .persistent()
-        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+    match owner {
+        Some(owner) => {
+            env.storage().persistent().set(&key, &owner);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
+        }
+        None => env.storage().persistent().remove(&key),
+    }
 }
 
 pub fn check_owner(env: &Env, auth: &Address, id: i128) {

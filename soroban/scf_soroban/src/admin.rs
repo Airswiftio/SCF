@@ -1,6 +1,6 @@
-use crate::storage_types::DataKey;
-use soroban_sdk::{Env, Address, panic_with_error};
 use crate::errors::Error;
+use crate::storage_types::DataKey;
+use soroban_sdk::{panic_with_error, Address, Env};
 
 pub fn has_administrator(env: &Env) -> bool {
     let key = DataKey::Admin;

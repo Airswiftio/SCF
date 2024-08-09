@@ -14,6 +14,7 @@ pub struct Offer {
     pub pool_token: Address,
     pub amount: i128,
     pub fee: i128,
+    pub remainder: i128,
     pub tc_contract: Address,
     pub tc_id: i128,
     pub status: i128,
@@ -33,4 +34,5 @@ pub enum DataKey {
     Offer(i128),
     ExtTokens, // contains a set of support external tokens
     Admin,
+    Recipient(i128),
 }

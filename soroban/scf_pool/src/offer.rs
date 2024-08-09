@@ -1,5 +1,8 @@
-use crate::storage_types::{DataKey, Offer, OFFER_BUMP_AMOUNT, OFFER_LIFETIME_THRESHOLD};
-use soroban_sdk::{Address, Env};
+use crate::{
+    error::Error,
+    storage_types::{DataKey, Offer, OFFER_BUMP_AMOUNT, OFFER_LIFETIME_THRESHOLD},
+};
+use soroban_sdk::{panic_with_error, Address, Env};
 
 pub fn read_offer(e: &Env, offer_id: i128) -> Option<Offer> {
     let key = DataKey::Offer(offer_id);
@@ -33,6 +36,7 @@ pub fn write_offer(
     pool_token: Address,
     amount: i128,
     fee: i128,
+    remainder: i128,
     tc_contract: Address,
     tc_id: i128,
 ) {
@@ -41,6 +45,7 @@ pub fn write_offer(
         pool_token,
         amount,
         fee,
+        remainder,
         tc_contract,
         tc_id,
         status: 0,
@@ -65,4 +70,24 @@ pub fn change_offer(e: &Env, offer_id: i128, status: i128) -> bool {
     } else {
         return false;
     }
+}
+
+pub fn read_recipient(e: &Env, offer_id: i128) -> Address {
+    let key = DataKey::Recipient(offer_id);
+    if let Some(data) = e.storage().persistent().get::<DataKey, Address>(&key) {
+        e.storage()
+            .persistent()
+            .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
+        data
+    } else {
+        panic_with_error!(&e, Error::RecipientNotFound)
+    }
+}
+
+pub fn write_recipient(e: &Env, offer_id: i128, recipient: Address) {
+    let key = DataKey::Recipient(offer_id);
+    e.storage().persistent().set(&key, &recipient);
+    e.storage()
+        .persistent()
+        .extend_ttl(&key, OFFER_LIFETIME_THRESHOLD, OFFER_BUMP_AMOUNT);
 }

@@ -6,6 +6,7 @@ mod contract;
 mod errors;
 mod event;
 mod interface;
+mod loan;
 mod metadata;
 mod order_info;
 mod order_state;

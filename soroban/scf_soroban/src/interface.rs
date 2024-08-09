@@ -14,8 +14,16 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["set_admin", admin: Address], data = [new_admin: Address]
     fn set_admin(env: Env, new_admin: Address);
 
+    /// Give another smart contract permissions to call functions in "Loan interface". Will fail if the loan contract is already set.
+    /// Emit event with topics = ["set_loan"], data = [loan_contract: Address]
+    fn set_loan_contract(env: Env, contract_addr: Address);
+
+    // --------------------------------------------------------------------------------
+    // Loan interface
+    // --------------------------------------------------------------------------------
+
     /// Set the loan status of a token.
-    /// Emit event with topics = ["set_loan_status", id: i128], data = [status: u32]
+    /// Emit event with topics = ["loan", id: i128], data = [status: u32]
     fn set_loan_status(env: Env, id: i128, status: u32);
 
     // --------------------------------------------------------------------------------

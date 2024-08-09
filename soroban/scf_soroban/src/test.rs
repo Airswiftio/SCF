@@ -644,6 +644,7 @@ fn test_redeem_loaned() {
     client.pay_off(&buyer);
     assert!(client.check_paid());
     assert!(client.check_expired());
+    client.set_loan_contract(&admin);
 
     // redeem should not be possible if loan_status is set to 1
     client.set_loan_status(&0, &1);
@@ -677,6 +678,7 @@ fn test_split_loaned() {
     let to = Address::generate(&env);
     client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
+    client.set_loan_contract(&admin);
 
     // split should fail if loan_status is 1
     client.set_loan_status(&0, &1);
@@ -707,5 +709,68 @@ fn test_split_loaned() {
     assert_eq!(to, client.owner(&2));
     assert_eq!(0, client.parent(&2));
 
-    assert_eq!(true, client.is_disabled(&0));
+    assert!(client.is_disabled(&0));
+}
+
+#[test]
+fn test_set_loan() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let to = Address::generate(&env);
+
+    client.mint_original(&to, &String::from_str(&env, "a"));
+    assert_eq!(1000000, client.amount(&0));
+
+    // set_loan should fail if loan_contract hasn't been set yet
+    let res = client.try_set_loan_status(&0, &1);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidContract as u32
+        )))
+    );
+
+    // if the loan contract is set, it should not be possible to set it again
+    client.set_loan_contract(&admin);
+    let res = client.try_set_loan_contract(&admin);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotEmpty as u32
+        )))
+    );
+
+    // if the token doesn't exist, set_loan_status should fail
+    let res = client.try_set_loan_status(&1, &1);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotFound as u32
+        )))
+    );
+
+    // if the token is disabled, set_loan_status should fail
+    let split_params = vec![
+        &env,
+        SplitRequest {
+            amount: 300000,
+            to: to.clone(),
+        },
+    ];
+    client.split(&0, &split_params);
+    assert!(client.is_disabled(&0));
+    let res = client.try_set_loan_status(&0, &1);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
+
+    // successful set_loan_status
+    client.set_loan_status(&1, &1);
 }

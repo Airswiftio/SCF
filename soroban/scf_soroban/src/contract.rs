@@ -3,6 +3,9 @@ use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
 use crate::interface::TokenizedCertificateTrait;
+use crate::loan::{
+    has_loan_contract, read_loan_contract, read_loan_status, write_loan_contract, write_loan_status,
+};
 use crate::metadata::{read_external_token, write_external_token};
 use crate::order_info::{read_order_info, write_order_info};
 use crate::order_state::{read_paid, update_and_read_expired, write_paid};
@@ -11,10 +14,7 @@ use crate::owner::{
     write_recipient, write_vc,
 };
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use crate::sub_tc::{
-    read_loan_status, read_sub_tc, read_sub_tc_disabled, write_loan_status, write_sub_tc,
-    write_sub_tc_disabled,
-};
+use crate::sub_tc::{read_sub_tc, read_sub_tc_disabled, write_sub_tc, write_sub_tc_disabled};
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, token, vec, Address, Env, String, Vec,
 };
@@ -61,13 +61,35 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::set_admin(&env, admin, new_admin);
     }
 
-    fn set_loan_status(env: Env, id: i128, status: u32) {
+    fn set_loan_contract(env: Env, contract_addr: Address) {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
         let admin = read_administrator(&env);
         admin.require_auth();
 
+        if has_loan_contract(&env) {
+            panic_with_error!(&env, Error::NotEmpty);
+        }
+        write_loan_contract(&env, &contract_addr);
+        event::set_loan(&env, contract_addr);
+    }
+
+    fn set_loan_status(env: Env, id: i128, status: u32) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        let loan_contract = read_loan_contract(&env);
+        loan_contract.require_auth();
+
+        // check id is a token that was already minted
+        if read_supply(&env) <= id {
+            panic_with_error!(&env, Error::NotFound);
+        }
+        // check token is still active
+        if read_sub_tc_disabled(&env, id) {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
         write_loan_status(&env, id, status);
         event::loan(&env, id, status);
     }

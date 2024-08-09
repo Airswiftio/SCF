@@ -22,6 +22,7 @@ pub enum DataKey {
     ExternalToken,
     Recipient(i128),
     LoanStatus(i128),
+    LoanContract,
 }
 
 #[derive(Clone)]
