@@ -127,13 +127,13 @@ fn test_create_offer() {
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
     // mint ext token to offerer
-    token_admin_client.mint(&offerer, &1000000);
+    token_admin_client.mint(&offerer, &10000000000000);
 
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address.clone(),
-        &600000,
-        &20000,
+        &(600000 * i128::pow(10, token_client.decimals())),
+        &(20000 * i128::pow(10, token_client.decimals())),
         &tc_client.address,
         &0,
     );
@@ -153,8 +153,8 @@ fn test_create_offer() {
                 (
                     symbol_short!("create"),
                     offerer.clone(),
-                    600000i128,
-                    20000i128
+                    600000i128 * 10000000,
+                    20000i128 * 10000000,
                 )
                     .into_val(&e)
             );
@@ -169,13 +169,16 @@ fn test_create_offer() {
     let offer = pool_client.get_offer(&offer_id);
     //test offer information
     assert_eq!(offer.from, offerer);
-    assert_eq!(offer.amount, 600000);
-    assert_eq!(offer.fee, 20000);
-    assert_eq!(offer.remainder, 380000);
+    assert_eq!(offer.amount, 600000i128 * 10000000);
+    assert_eq!(offer.fee, 20000i128 * 10000000);
+    assert_eq!(offer.remainder, 380000i128 * 10000000);
     assert_eq!(offer.tc_contract, tc_client.address);
     assert_eq!(offer.tc_id, 0);
     assert_eq!(offer.status, 0);
-    assert_eq!(token_client.balance(&offerer.clone()), 400000);
+    assert_eq!(
+        token_client.balance(&offerer.clone()),
+        400000i128 * 10000000
+    );
 }
 
 #[test]
@@ -253,8 +256,8 @@ fn test_create_offer_invalid_amount() {
     let res = pool_client.try_create_offer(
         &offerer,
         &token_client.address.clone(),
-        &900000,
-        &110000,
+        &(900000 * i128::pow(10, token_client.decimals())),
+        &(110000 * i128::pow(10, token_client.decimals())),
         &tc_client.address,
         &0,
     );
@@ -927,14 +930,14 @@ fn test_close_offer() {
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
     // mint ext token to offerer
-    token_admin_client.mint(&offerer, &1000000);
+    token_admin_client.mint(&offerer, &10000000000000);
 
     // create the offer
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &600000,
-        &20000,
+        &(600000 * i128::pow(10, token_client.decimals())),
+        &(20000 * i128::pow(10, token_client.decimals())),
         &tc_client.address,
         &0,
     );
@@ -947,7 +950,7 @@ fn test_close_offer() {
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 3);
     assert_eq!(tc_client.loan_status(&0), 2);
-    assert_eq!(token_client.balance(&supplier), 980000);
+    assert_eq!(token_client.balance(&supplier), 980000 * 10000000);
 
     //Test for the event
     //Get the latest event
