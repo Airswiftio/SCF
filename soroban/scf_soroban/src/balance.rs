@@ -5,9 +5,11 @@ pub fn read_supply(env: &Env) -> i128 {
     let key = DataKey::Supply;
     match env.storage().persistent().get::<DataKey, i128>(&key) {
         Some(balance) => {
-            env.storage()
-                .persistent()
-                .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
             balance
         }
         None => 0,
@@ -21,5 +23,5 @@ pub fn increment_supply(env: &Env) {
         .set(&key, &(read_supply(&env) + 1));
     env.storage()
         .persistent()
-        .bump(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
+        .extend_ttl(&key, BALANCE_LIFETIME_THRESHOLD, BALANCE_BUMP_AMOUNT);
 }

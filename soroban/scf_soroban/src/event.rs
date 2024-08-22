@@ -29,13 +29,3 @@ pub(crate) fn split(e: &Env, from: Address, id: i128, new_ids: Vec<i128>) {
     let topics = (symbol_short!("split"), from);
     e.events().publish(topics, (id, new_ids));
 }
-
-pub(crate) fn approve(e: &Env, operator: Address, id: i128) {
-    let topics = (symbol_short!("appr"), operator);
-    e.events().publish(topics, id);
-}
-
-pub(crate) fn approve_all(e: &Env, operator: Address, owner: Address) {
-    let topics = (symbol_short!("appr_all"), operator);
-    e.events().publish(topics, owner);
-}

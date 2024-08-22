@@ -16,13 +16,3 @@ pub fn write_administrator(e: &Env, id: &Address) {
     let key = DataKey::Admin;
     e.storage().instance().set(&key, id);
 }
-
-pub fn get_token(e: &Env) -> Address {
-    let key = DataKey::TokenContract;
-    e.storage().instance().get(&key).unwrap()
-}
-
-pub fn write_token(e: &Env, token: &Address) {
-    let key = DataKey::TokenContract;
-    e.storage().instance().set(&key, token);
-}

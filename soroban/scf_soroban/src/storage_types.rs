@@ -9,32 +9,13 @@ pub(crate) const BALANCE_LIFETIME_THRESHOLD: u32 = BALANCE_BUMP_AMOUNT - DAY_IN_
 
 #[derive(Clone)]
 #[contracttype]
-pub struct ApprovalAll {
-    pub operator: Address,
-    pub owner: Address,
-}
-
-#[derive(Clone)]
-#[contracttype]
-pub enum ApprovalKey {
-    All(ApprovalAll),
-    ID(i128),
-}
-
-#[derive(Clone)]
-#[contracttype]
 pub enum DataKey {
-    Nonce(Address),
-    Minted(Address),
     Admin,
-    Name,
-    Symbol,
-    URI(i128),
-    Approval(ApprovalKey),
     Owner(i128),
     Disabled(i128),
     Supply,
-    SubNFTInfo(i128),
+    SubTCInfo(i128),
+    VC(i128),
     OrderInfo,
     Expired,
     Paid,
@@ -44,8 +25,9 @@ pub enum DataKey {
 
 #[derive(Clone)]
 #[contracttype]
-pub struct SubNFT {
-    pub root: i128,
+pub struct SubTC {
+    pub parent: i128,
+    pub depth: u32,
     pub amount: u32,
 }
 
