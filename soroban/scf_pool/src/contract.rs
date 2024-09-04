@@ -114,6 +114,9 @@ impl OfferPoolTrait for OfferPool {
         if tc_client.loan_status(&tc_id) != 0 {
             panic_with_error!(&e, Error::TCAlreadyLoaned);
         }
+        if amount < 0 || fee < 0 {
+            panic_with_error!(&e, Error::InvalidAmount);
+        }
 
         // TODO: this only works if the TC amount is expressed in the same currency as the ext_token.
         let tc_amount = i128::from(tc_client.amount(&tc_id)) * 10i128.pow(token_client.decimals());
