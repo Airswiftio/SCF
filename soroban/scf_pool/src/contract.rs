@@ -237,8 +237,10 @@ impl OfferPoolTrait for OfferPool {
                 let recipient = read_recipient(&e, offer_id);
                 offer.from.require_auth();
 
-                let token_client = token::Client::new(&e, &offer.pool_token);
-                token_client.transfer(&offer.from, &recipient, &offer.remainder);
+                if offer.remainder > 0 {
+                    let token_client = token::Client::new(&e, &offer.pool_token);
+                    token_client.transfer(&offer.from, &recipient, &offer.remainder);
+                }
 
                 let tc_contract = offer.tc_contract;
                 let tc_id = offer.tc_id;
