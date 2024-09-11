@@ -2,8 +2,8 @@
 use crate::contract::{OfferPool, OfferPoolClient};
 use crate::error::Error as ContractError;
 use crate::test_util::{
-    setup_pool, setup_tc, setup_test_token, tc_contract::Error as TCError,
-    tc_contract::SplitRequest,
+    new_contract, old_contract, setup_pool, setup_tc, setup_test_token,
+    tc_contract::Error as TCError, tc_contract::SplitRequest,
 };
 use soroban_sdk::{
     map, symbol_short, testutils::Address as _, testutils::Events, vec, Address, Env, Error,
@@ -971,4 +971,21 @@ fn test_close_offer() {
         }
         None => panic!("The event is not published"),
     }
+}
+
+#[test]
+fn test_upgrade() {
+    let e = Env::default();
+    e.mock_all_auths();
+
+    let contract_id = e.register_contract_wasm(None, old_contract::WASM);
+    let client = old_contract::Client::new(&e, &contract_id);
+
+    let admin = Address::generate(&e);
+    client.initialize(&admin);
+    assert_eq!(client.version(), 0);
+
+    let new_wasm = e.deployer().upload_contract_wasm(new_contract::WASM);
+    client.upgrade(&new_wasm);
+    assert_eq!(client.version(), 1);
 }

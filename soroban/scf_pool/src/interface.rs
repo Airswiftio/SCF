@@ -1,5 +1,5 @@
 use crate::storage_types::Offer;
-use soroban_sdk::{Address, Env, Vec};
+use soroban_sdk::{Address, BytesN, Env, Vec};
 
 pub trait OfferPoolTrait {
     /// Initialize the contract with an admin
@@ -7,6 +7,9 @@ pub trait OfferPoolTrait {
 
     /// Get the current admin of the contract
     fn admin(e: Env) -> Address;
+
+    /// Get the current version of the contract
+    fn version() -> u32;
 
     // --------------------------------------------------------------------------------
     // Admin interface
@@ -20,6 +23,9 @@ pub trait OfferPoolTrait {
 
     /// Remove support for an external token. Must be called by the admin.
     fn remove_ext_token(e: Env, ext_token: Address);
+
+    /// Upgrade the smart contract with a new WASM hash. Must be called by the admin.
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>);
 
     // --------------------------------------------------------------------------------
     // Pool interface

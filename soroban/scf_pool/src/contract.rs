@@ -9,7 +9,7 @@ use crate::offer::{
 use crate::pool_token::{has_ext_token, read_ext_tokens, write_ext_tokens};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
-use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec};
 
 mod tc {
     soroban_sdk::contractimport!(
@@ -27,6 +27,16 @@ impl OfferPoolTrait for OfferPool {
             panic!("already initialized")
         }
         write_administrator(&e, &admin);
+    }
+
+    fn version() -> u32 {
+        1
+    }
+
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
+        let admin = read_administrator(&e);
+        admin.require_auth();
+        e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 
     fn admin(env: Env) -> Address {

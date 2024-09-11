@@ -6,6 +6,14 @@ pub mod tc_contract {
     );
 }
 
+pub mod old_contract {
+    soroban_sdk::contractimport!(file = "./test_wasm/pool_test_v0.wasm");
+}
+
+pub mod new_contract {
+    soroban_sdk::contractimport!(file = "./test_wasm/pool_test_v1.wasm");
+}
+
 use crate::contract::{OfferPool, OfferPoolClient};
 use soroban_sdk::{contracttype, testutils::BytesN as _, token, Address, BytesN, Env};
 
