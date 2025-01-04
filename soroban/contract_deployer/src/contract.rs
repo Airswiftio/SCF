@@ -9,6 +9,7 @@ pub trait DeployerTrait {
         deployer: Address,
         token_wasm_hash: BytesN<32>,
         salt: BytesN<32>,
+        constructor_args: Vec<Val>,
         init_fn_list: Vec<Symbol>,
         init_args_list: Vec<Vec<Val>>,
     ) -> Address;
@@ -24,6 +25,7 @@ impl DeployerTrait for Deployer {
         deployer: Address,
         token_wasm_hash: BytesN<32>,
         salt: BytesN<32>,
+        constructor_args: Vec<Val>,
         init_fn_list: Vec<Symbol>,
         init_args_list: Vec<Vec<Val>>,
     ) -> Address {
@@ -37,7 +39,7 @@ impl DeployerTrait for Deployer {
         let deployed_address = e
             .deployer()
             .with_address(deployer, salt)
-            .deploy(token_wasm_hash);
+            .deploy_v2(token_wasm_hash, constructor_args);
 
         for i in 0..init_fn_list.len() {
             let _res: Val = e.invoke_contract(

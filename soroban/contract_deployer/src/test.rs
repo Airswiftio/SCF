@@ -35,6 +35,7 @@ fn test() {
         &admin.clone(),
         &wasm_hash,
         &salt,
+        &vec![&e],
         &vec![
             &e,
             Symbol::new(&e, "initialize"),
@@ -56,3 +57,5 @@ fn test() {
     let tc_client = tc_contract::Client::new(&e, &new_tc_contract);
     assert_eq!(tc_client.admin(), admin);
 }
+
+// TODO: test contract deploy with constructor args
