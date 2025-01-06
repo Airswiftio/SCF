@@ -1,5 +1,5 @@
 #![cfg(test)]
-use crate::contract::{TokenizedCertificate, TokenizedCertificateClient};
+use crate::contract::{TokenizedCertificate, TokenizedCertificateArgs, TokenizedCertificateClient};
 
 use crate::errors::Error as ContractError;
 use crate::storage_types::SplitRequest;
@@ -12,18 +12,22 @@ use soroban_sdk::{
 #[test]
 fn test_initialize() {
     let env = Env::default();
-    let contract_id = env.register_contract(None, TokenizedCertificate);
-    let client = TokenizedCertificateClient::new(&env, &contract_id);
 
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let total_amount: u32 = 1000000;
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
 
-    client.initialize(&admin, &buyer, &total_amount, &end_time);
+    let contract_id = env.register(
+        TokenizedCertificate,
+        TokenizedCertificateArgs::__constructor(&admin, &buyer, &total_amount, &end_time),
+    );
+    let client = TokenizedCertificateClient::new(&env, &contract_id);
+
     assert_eq!(admin, client.admin());
 }
 
+/* TODO test constructor error once Stellar adds testing functions for constructors
 #[test]
 fn test_initialize_invalid_end_time() {
     let env = Env::default();
@@ -45,6 +49,7 @@ fn test_initialize_invalid_end_time() {
         )))
     );
 }
+*/
 
 #[test]
 fn test_mint_original() {
@@ -445,7 +450,9 @@ fn test_pay_off() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token
-    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_token_addr = &env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&buyer, &10000000000000);
 
@@ -537,7 +544,9 @@ fn test_redeem() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token and pay the contract
-    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_token_addr = &env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&buyer, &10000000000000);
     let ext_client = TokenClient::new(&env, ext_token_addr);
@@ -639,7 +648,9 @@ fn test_redeem_loaned() {
     let client = setup_test_token(&env, &admin, &buyer);
 
     // setup fake external token and pay the contract
-    let ext_token_addr = &env.register_stellar_asset_contract(admin.clone());
+    let ext_token_addr = &env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
     let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
     ext_admin.mint(&buyer, &10000000000000);
     let ext_client = TokenClient::new(&env, ext_token_addr);

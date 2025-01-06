@@ -1,4 +1,4 @@
-use crate::admin::{has_administrator, read_administrator, write_administrator};
+use crate::admin::{read_administrator, write_administrator};
 use crate::balance::{increment_supply, read_supply};
 use crate::errors::Error;
 use crate::event;
@@ -24,16 +24,13 @@ pub struct TokenizedCertificate;
 
 #[contractimpl]
 impl TokenizedCertificateTrait for TokenizedCertificate {
-    fn initialize(
+    fn __constructor(
         e: Env,
         admin: Address,
         buyer_address: Address,
         total_amount: u32,
         end_time: u64,
     ) {
-        if has_administrator(&e) {
-            panic!("already initialized")
-        }
         if end_time <= e.ledger().timestamp() {
             panic_with_error!(&e, Error::NotPermitted);
         }
