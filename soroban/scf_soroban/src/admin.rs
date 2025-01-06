@@ -2,11 +2,6 @@ use crate::errors::Error;
 use crate::storage_types::DataKey;
 use soroban_sdk::{panic_with_error, Address, Env};
 
-pub fn has_administrator(env: &Env) -> bool {
-    let key = DataKey::Admin;
-    env.storage().instance().has(&key)
-}
-
 pub fn read_administrator(env: &Env) -> Address {
     let key = DataKey::Admin;
     match env.storage().instance().get::<DataKey, Address>(&key) {
