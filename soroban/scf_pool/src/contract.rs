@@ -1,4 +1,4 @@
-use crate::admin::{has_administrator, read_administrator, write_administrator};
+use crate::admin::{read_administrator, write_administrator};
 use crate::error::Error;
 use crate::event;
 use crate::interface::OfferPoolTrait;
@@ -22,15 +22,12 @@ pub struct OfferPool;
 
 #[contractimpl]
 impl OfferPoolTrait for OfferPool {
-    fn initialize(e: Env, admin: Address) {
-        if has_administrator(&e) {
-            panic!("already initialized")
-        }
+    fn __constructor(e: Env, admin: Address) {
         write_administrator(&e, &admin);
     }
 
     fn version() -> u32 {
-        1
+        2
     }
 
     fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {

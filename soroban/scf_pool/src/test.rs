@@ -30,25 +30,11 @@ fn test_get_offer_nonexistent() {
 #[test]
 fn test_initialize() {
     let e = Env::default();
-    let contract_id = e.register_contract(None, OfferPool);
-    let client = OfferPoolClient::new(&e, &contract_id);
-
     let admin = Address::generate(&e);
-    client.initialize(&admin);
+    let contract_id = e.register(OfferPool, (admin,));
+    let client = OfferPoolClient::new(&e, &contract_id);
 
     assert_eq!(client.get_ext_tokens(), vec![&e]);
-}
-
-#[test]
-#[should_panic(expected = "already initialized")]
-fn test_initialize_twice() {
-    let e = Env::default();
-    let contract_id = e.register_contract(None, OfferPool);
-    let client = OfferPoolClient::new(&e, &contract_id);
-
-    let admin = Address::generate(&e);
-    client.initialize(&admin);
-    client.initialize(&admin);
 }
 
 #[test]
@@ -956,18 +942,22 @@ fn test_close_offer() {
     //Get the latest event
     match e.events().all().last() {
         Some((contract_address, topics, data)) => {
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, offer.remainder);
+
             // Test the event contract address
             assert_eq!(contract_address, contract_id.clone());
 
             // Test the event topics
             assert_eq!(
                 topics,
-                (symbol_short!("close"), offerer.clone(), offer_id,).into_val(&e)
+                (symbol_short!("close"), offerer.clone(), offer.remainder).into_val(&e)
             );
 
             // Test the event data
             let data_decoded: i128 = data.into_val(&e);
-            assert_eq!(data_decoded, offer.remainder);
+            assert_eq!(data_decoded, offer_id);
         }
         None => panic!("The event is not published"),
     }
@@ -978,14 +968,15 @@ fn test_upgrade() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let contract_id = e.register_contract_wasm(None, old_contract::WASM);
-    let client = old_contract::Client::new(&e, &contract_id);
-
     let admin = Address::generate(&e);
+    let contract_id = e.register(old_contract::WASM, ());
+    let client = old_contract::Client::new(&e, &contract_id);
     client.initialize(&admin);
+    assert_eq!(client.admin(), admin);
     assert_eq!(client.version(), 0);
 
     let new_wasm = e.deployer().upload_contract_wasm(new_contract::WASM);
     client.upgrade(&new_wasm);
-    assert_eq!(client.version(), 1);
+    assert_eq!(client.admin(), admin);
+    assert_eq!(client.version(), 2);
 }

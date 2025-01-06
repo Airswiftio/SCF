@@ -3,7 +3,7 @@ use soroban_sdk::{Address, BytesN, Env, Vec};
 
 pub trait OfferPoolTrait {
     /// Initialize the contract with an admin
-    fn initialize(e: Env, admin: Address);
+    fn __constructor(e: Env, admin: Address);
 
     /// Get the current admin of the contract
     fn admin(e: Env) -> Address;

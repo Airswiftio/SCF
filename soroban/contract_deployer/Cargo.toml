@@ -9,7 +9,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 soroban-sdk = { version = "22.0.3" }
-num-integer = { version = "0.1.45", default-features = false, features = ["i128"] }
 
 [dev-dependencies]
 soroban-sdk = { version = "22.0.3", features = ["testutils"] }
