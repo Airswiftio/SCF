@@ -237,7 +237,11 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             write_sub_tc_disabled(&env, new_id, false);
             write_loan_status(&env, new_id, 0);
             write_recipient(&env, new_id, &req.to);
-            write_owner(&env, new_id, Some(contract_addr.clone()));
+            if req.to == owner {
+                write_owner(&env, new_id, Some(owner.clone()));
+            } else {
+                write_owner(&env, new_id, Some(contract_addr.clone()));
+            }
             write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
             new_ids.push_back(new_id);
