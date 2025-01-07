@@ -1,17 +1,20 @@
 [package]
-name = "contract-deployer"
-version = "0.0.0"
+name = "scf-soroban-roam"
+version = "0.1.0"
 edition = "2021"
-publish = false
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-soroban-sdk = { version = "22.0.3" }
+soroban-sdk = "22.0.3"
 
 [dev-dependencies]
 soroban-sdk = { version = "22.0.3", features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]
 
 [profile.release]
 opt-level = "z"

@@ -213,14 +213,14 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let contract_addr = env.current_contract_address();
 
         let parent = read_sub_tc(&env, id);
-        if parent.depth >= 5 {
+        if parent.depth >= 100 {
             panic_with_error!(&env, Error::SplitLimitReached);
         }
         let mut sum = 0;
         let root_total = read_order_info(&env).total_amount;
         for req in splits.clone() {
-            // each split must be at least 10% of the root total_amount
-            if req.amount * 10 < root_total {
+            // each split must be at least 1% of the root total_amount
+            if req.amount * 100 < root_total {
                 panic_with_error!(&env, Error::SplitAmountTooLow);
             }
             sum += req.amount;
@@ -237,7 +237,11 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             write_sub_tc_disabled(&env, new_id, false);
             write_loan_status(&env, new_id, 0);
             write_recipient(&env, new_id, &req.to);
-            write_owner(&env, new_id, Some(contract_addr.clone()));
+            if req.to == owner {
+                write_owner(&env, new_id, Some(owner.clone()));
+            } else {
+                write_owner(&env, new_id, Some(contract_addr.clone()));
+            }
             write_vc(&env, new_id, vec![&env]);
             increment_supply(&env);
             new_ids.push_back(new_id);

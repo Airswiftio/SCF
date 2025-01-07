@@ -1,12 +1,15 @@
-use crate::admin::{has_administrator, read_administrator, write_administrator};
+use crate::admin::{read_administrator, write_administrator};
 use crate::error::Error;
 use crate::event;
 use crate::interface::OfferPoolTrait;
-use crate::offer::{change_offer, increment_supply, read_offer, read_supply, write_offer};
+use crate::offer::{
+    change_offer, increment_supply, read_offer, read_recipient, read_supply, write_offer,
+    write_recipient,
+};
 use crate::pool_token::{has_ext_token, read_ext_tokens, write_ext_tokens};
 use crate::storage_types::{Offer, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
 
-use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec};
 
 mod tc {
     soroban_sdk::contractimport!(
@@ -19,11 +22,18 @@ pub struct OfferPool;
 
 #[contractimpl]
 impl OfferPoolTrait for OfferPool {
-    fn initialize(e: Env, admin: Address) {
-        if has_administrator(&e) {
-            panic!("already initialized")
-        }
+    fn __constructor(e: Env, admin: Address) {
         write_administrator(&e, &admin);
+    }
+
+    fn version() -> u32 {
+        2
+    }
+
+    fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
+        let admin = read_administrator(&e);
+        admin.require_auth();
+        e.deployer().update_current_contract_wasm(new_wasm_hash);
     }
 
     fn admin(env: Env) -> Address {
@@ -90,6 +100,7 @@ impl OfferPoolTrait for OfferPool {
         from: Address,
         ext_token: Address,
         amount: i128,
+        fee: i128,
         tc_contract: Address,
         tc_id: i128,
     ) -> i128 {
@@ -103,9 +114,22 @@ impl OfferPoolTrait for OfferPool {
         let token_client = token::Client::new(&e, &ext_token);
         let tc_client = tc::Client::new(&e, &tc_contract);
 
-        // calling the contract to check if offer is disabled
+        // calling the contract to check if TC is disabled or already loaned
         if tc_client.is_disabled(&tc_id) {
             panic_with_error!(&e, Error::TCDisabled);
+        }
+        if tc_client.loan_status(&tc_id) != 0 {
+            panic_with_error!(&e, Error::TCAlreadyLoaned);
+        }
+        if amount < 0 || fee < 0 {
+            panic_with_error!(&e, Error::InvalidAmount);
+        }
+
+        // TODO: this only works if the TC amount is expressed in the same currency as the ext_token.
+        let tc_amount = i128::from(tc_client.amount(&tc_id)) * 10i128.pow(token_client.decimals());
+        let remainder = tc_amount - amount - fee;
+        if remainder < 0 {
+            panic_with_error!(&e, Error::InvalidAmount);
         }
 
         from.require_auth();
@@ -119,12 +143,14 @@ impl OfferPoolTrait for OfferPool {
             from.clone(),
             ext_token,
             amount,
+            fee,
+            remainder,
             tc_contract,
             tc_id,
         );
 
         increment_supply(&e);
-        event::create_offer(&e, from, offer_id, amount);
+        event::create_offer(&e, from, offer_id, amount, fee);
         return offer_id;
     }
 
@@ -189,15 +215,62 @@ impl OfferPoolTrait for OfferPool {
                 if tc_client.is_disabled(&tc_id) {
                     panic_with_error!(&e, Error::TCDisabled);
                 }
+                if tc_client.loan_status(&tc_id) != 0 {
+                    panic_with_error!(&e, Error::TCAlreadyLoaned);
+                }
                 to.require_auth();
                 tc_client.transfer(&to, &from, &tc_id);
 
                 token_client.transfer(&e.current_contract_address(), &to, &amount);
 
                 change_offer(&e, offer_id, 2);
+                tc_client.set_loan_status(&tc_id, &1);
+                write_recipient(&e, offer_id, to.clone());
                 event::accept_offer(&e, to, offer_id);
             }
             None => panic_with_error!(&e, Error::OfferEmpty),
         }
+    }
+
+    fn close_offer(e: Env, offer_id: i128) {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        match read_offer(&e, offer_id) {
+            Some(offer) => {
+                if offer.status != 2 {
+                    panic_with_error!(&e, Error::OfferChanged);
+                }
+                let recipient = read_recipient(&e, offer_id);
+                offer.from.require_auth();
+
+                if offer.remainder > 0 {
+                    let token_client = token::Client::new(&e, &offer.pool_token);
+                    token_client.transfer(&offer.from, &recipient, &offer.remainder);
+                }
+
+                let tc_contract = offer.tc_contract;
+                let tc_id = offer.tc_id;
+                let tc_client = tc::Client::new(&e, &tc_contract);
+                if tc_client.is_disabled(&tc_id) {
+                    panic_with_error!(&e, Error::TCDisabled);
+                }
+                if tc_client.loan_status(&tc_id) != 1 {
+                    panic_with_error!(&e, Error::TCNotLoaned);
+                }
+                tc_client.set_loan_status(&tc_id, &2);
+
+                change_offer(&e, offer_id, 3);
+                event::close_offer(&e, offer.from, offer_id, offer.remainder);
+            }
+            None => panic_with_error!(&e, Error::OfferEmpty),
+        }
+    }
+
+    fn recipient(e: Env, offer_id: i128) -> Address {
+        e.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_recipient(&e, offer_id)
     }
 }

@@ -31,17 +31,17 @@ fn test_initialize() {
 #[test]
 fn test_initialize_invalid_end_time() {
     let env = Env::default();
+    let contract_id = env.register_contract(None, TokenizedCertificate);
+    let client = TokenizedCertificateClient::new(&env, &contract_id);
 
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let total_amount: u32 = 1000000;
     let timestamp = 1672531200; // 2023-01-01 00:00:00 UTC+0
+    set_ledger_timestamp(&env, timestamp);
 
     let end_time = timestamp - 86400;
-    set_ledger_timestamp(&env, timestamp);
-    let contract_id = env.register(TokenizedCertificate, (&admin, &buyer, &total_amount, &end_time));
-    let client = TokenizedCertificateClient::new(&env, &contract_id);
-
+    let res = client.try_initialize(&admin, &buyer, &total_amount, &end_time);
     assert_eq!(
         res,
         Err(Ok(Error::from_contract_error(
@@ -147,8 +147,9 @@ fn test_split() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
+    let from = Address::generate(&env);
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&from, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
     client.split(
@@ -181,7 +182,7 @@ fn test_split() {
     assert_eq!(vec![&env], client.vc(&2));
 
     assert_eq!(200000, client.amount(&3));
-    assert_eq!(to, client.owner(&3));
+    assert_eq!(from, client.owner(&3));
     assert_eq!(0, client.parent(&3));
     assert_eq!(
         vec![
@@ -196,7 +197,7 @@ fn test_split() {
 }
 
 #[test]
-fn test_split_nested() {
+fn test_split_to_self() {
     let env = Env::default();
     env.mock_all_auths();
     let admin = Address::generate(&env);
@@ -212,6 +213,49 @@ fn test_split_nested() {
         &vec![
             &env,
             SplitRequest {
+                amount: 300000,
+                to: to.clone(),
+            },
+        ],
+    );
+
+    assert_eq!(300000, client.amount(&1));
+    assert_eq!(to, client.owner(&1));
+    assert_eq!(0, client.parent(&1));
+
+    assert_eq!(700000, client.amount(&2));
+    assert_eq!(to, client.owner(&2));
+    assert_eq!(0, client.parent(&2));
+
+    assert_eq!(true, client.is_disabled(&0));
+
+    let res = client.try_sign_off(&1);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::NotPermitted as u32
+        )))
+    );
+}
+
+#[test]
+fn test_split_nested() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let from = Address::generate(&env);
+    let to = Address::generate(&env);
+    client.mint_original(&from, &String::from_str(&env, "a"));
+    assert_eq!(1000000, client.amount(&0));
+
+    client.split(
+        &0,
+        &vec![
+            &env,
+            SplitRequest {
                 amount: 800000,
                 to: to.clone(),
             },
@@ -219,7 +263,7 @@ fn test_split_nested() {
     );
     assert_eq!(800000, client.amount(&1));
 
-    // remaining token id 2 is worth 200k and belongs to buyer
+    // remaining token id 2 is worth 200k and belongs to "from"
 
     client.split(
         &1,
@@ -227,7 +271,7 @@ fn test_split_nested() {
             &env,
             SplitRequest {
                 amount: 500000,
-                to: to.clone(),
+                to: from.clone(),
             },
         ],
     );
@@ -248,8 +292,9 @@ fn test_split_twice() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
+    let from = Address::generate(&env);
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&from, &String::from_str(&env, "a"));
     client.split(
         &0,
         &vec![
@@ -349,7 +394,7 @@ fn test_split_minimum_amount() {
         &vec![
             &env,
             SplitRequest {
-                amount: 99999,
+                amount: 9999,
                 to: to.clone(),
             },
         ],
@@ -360,44 +405,6 @@ fn test_split_minimum_amount() {
             ContractError::SplitAmountTooLow as u32
         )))
     );
-}
-
-#[test]
-fn test_split_nested_depth_limit() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let admin = Address::generate(&env);
-    let buyer = Address::generate(&env);
-    let client = setup_test_token(&env, &admin, &buyer);
-
-    let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
-    assert_eq!(1000000, client.amount(&0));
-
-    // first 5 splits should succeed, 6th split should fail
-    for i in 0..6 {
-        let parent_id = i * 2;
-        let res = client.try_split(
-            &parent_id,
-            &vec![
-                &env,
-                SplitRequest {
-                    amount: 100000,
-                    to: to.clone(),
-                },
-            ],
-        );
-        if i < 5 {
-            assert!(res.is_ok());
-        } else {
-            assert_eq!(
-                res,
-                Err(Ok(Error::from_contract_error(
-                    ContractError::SplitLimitReached as u32
-                )))
-            );
-        }
-    }
 }
 
 #[test]
@@ -577,9 +584,10 @@ fn test_sign_off() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
+    let from = Address::generate(&env);
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
-    assert_eq!(to, client.owner(&0));
+    client.mint_original(&from, &String::from_str(&env, "a"));
+    assert_eq!(from, client.owner(&0));
 
     let split_req = SplitRequest {
         amount: 600000,
@@ -600,12 +608,13 @@ fn test_get_all_owned() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
+    let from = Address::generate(&env);
     let to = Address::generate(&env);
-    assert_eq!(vec![&env], client.get_all_owned(&to));
+    assert_eq!(vec![&env], client.get_all_owned(&from));
 
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&from, &String::from_str(&env, "a"));
 
-    assert_eq!(vec![&env, 0], client.get_all_owned(&to));
+    assert_eq!(vec![&env, 0], client.get_all_owned(&from));
 
     client.split(
         &0,
@@ -621,11 +630,12 @@ fn test_get_all_owned() {
             },
         ],
     );
-    assert_eq!(vec![&env, 3], client.get_all_owned(&to));
+    assert_eq!(vec![&env, 3], client.get_all_owned(&from));
+    assert_eq!(vec![&env], client.get_all_owned(&to));
 
     client.sign_off(&1);
     client.sign_off(&2);
-    assert_eq!(vec![&env, 1, 2, 3], client.get_all_owned(&to));
+    assert_eq!(vec![&env, 1, 2], client.get_all_owned(&to));
 }
 
 #[test]
@@ -686,8 +696,9 @@ fn test_split_loaned() {
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
 
+    let from = Address::generate(&env);
     let to = Address::generate(&env);
-    client.mint_original(&to, &String::from_str(&env, "a"));
+    client.mint_original(&from, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
     client.set_loan_contract(&admin);
 
@@ -717,7 +728,7 @@ fn test_split_loaned() {
     assert_eq!(0, client.parent(&1));
 
     assert_eq!(700000, client.amount(&2));
-    assert_eq!(to, client.owner(&2));
+    assert_eq!(from, client.owner(&2));
     assert_eq!(0, client.parent(&2));
 
     assert!(client.is_disabled(&0));

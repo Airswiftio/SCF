@@ -2,8 +2,8 @@
 use crate::contract::{OfferPool, OfferPoolClient};
 use crate::error::Error as ContractError;
 use crate::test_util::{
-    setup_pool, setup_tc, setup_test_token, tc_contract::Error as TCError,
-    tc_contract::SplitRequest,
+    new_contract, old_contract, setup_pool, setup_tc, setup_test_token,
+    tc_contract::Error as TCError, tc_contract::SplitRequest,
 };
 use soroban_sdk::{
     map, symbol_short, testutils::Address as _, testutils::Events, vec, Address, Env, Error,
@@ -30,25 +30,11 @@ fn test_get_offer_nonexistent() {
 #[test]
 fn test_initialize() {
     let e = Env::default();
-    let contract_id = e.register_contract(None, OfferPool);
-    let client = OfferPoolClient::new(&e, &contract_id);
-
     let admin = Address::generate(&e);
-    client.initialize(&admin);
+    let contract_id = e.register(OfferPool, (admin,));
+    let client = OfferPoolClient::new(&e, &contract_id);
 
     assert_eq!(client.get_ext_tokens(), vec![&e]);
-}
-
-#[test]
-#[should_panic(expected = "already initialized")]
-fn test_initialize_twice() {
-    let e = Env::default();
-    let contract_id = e.register_contract(None, OfferPool);
-    let client = OfferPoolClient::new(&e, &contract_id);
-
-    let admin = Address::generate(&e);
-    client.initialize(&admin);
-    client.initialize(&admin);
 }
 
 #[test]
@@ -122,16 +108,18 @@ fn test_create_offer() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
     // mint ext token to offerer
-    token_admin_client.mint(&offerer, &1000000);
+    token_admin_client.mint(&offerer, &10000000000000);
 
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address.clone(),
-        &600000,
+        &(600000 * i128::pow(10, token_client.decimals())),
+        &(20000 * i128::pow(10, token_client.decimals())),
         &tc_client.address,
         &0,
     );
@@ -148,7 +136,13 @@ fn test_create_offer() {
             // Test the event topics
             assert_eq!(
                 topics,
-                (symbol_short!("create"), offerer.clone(), 600000i128).into_val(&e)
+                (
+                    symbol_short!("create"),
+                    offerer.clone(),
+                    600000i128 * 10000000,
+                    20000i128 * 10000000,
+                )
+                    .into_val(&e)
             );
 
             // Test the event data
@@ -161,11 +155,16 @@ fn test_create_offer() {
     let offer = pool_client.get_offer(&offer_id);
     //test offer information
     assert_eq!(offer.from, offerer);
-    assert_eq!(offer.amount, 600000);
+    assert_eq!(offer.amount, 600000i128 * 10000000);
+    assert_eq!(offer.fee, 20000i128 * 10000000);
+    assert_eq!(offer.remainder, 380000i128 * 10000000);
     assert_eq!(offer.tc_contract, tc_client.address);
     assert_eq!(offer.tc_id, 0);
     assert_eq!(offer.status, 0);
-    assert_eq!(token_client.balance(&offerer.clone()), 400000);
+    assert_eq!(
+        token_client.balance(&offerer.clone()),
+        400000i128 * 10000000
+    );
 }
 
 #[test]
@@ -188,6 +187,7 @@ fn test_create_offer_unsupported_token() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -198,6 +198,7 @@ fn test_create_offer_unsupported_token() {
         &offerer,
         &token_client.address.clone(),
         &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -206,6 +207,51 @@ fn test_create_offer_unsupported_token() {
         res,
         Err(Ok(Error::from_contract_error(
             ContractError::TokenNotSupported as u32
+        )))
+    );
+}
+
+#[test]
+fn test_create_offer_invalid_amount() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, _) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+        &pool_client.address,
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &2000000);
+
+    let res = pool_client.try_create_offer(
+        &offerer,
+        &token_client.address.clone(),
+        &(900000 * i128::pow(10, token_client.decimals())),
+        &(110000 * i128::pow(10, token_client.decimals())),
+        &tc_client.address,
+        &0,
+    );
+
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::InvalidAmount as u32
         )))
     );
 }
@@ -231,6 +277,7 @@ fn test_create_offer_insufficient_balance() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -241,6 +288,7 @@ fn test_create_offer_insufficient_balance() {
         &offerer,
         &token_client.address.clone(),
         &2000000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -269,6 +317,7 @@ fn test_create_offer_disabled_tc() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
     tc_client.split(
@@ -289,6 +338,7 @@ fn test_create_offer_disabled_tc() {
         &offerer,
         &token_client.address.clone(),
         &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -296,6 +346,51 @@ fn test_create_offer_disabled_tc() {
         res,
         Err(Ok(Error::from_contract_error(
             ContractError::TCDisabled as u32
+        )))
+    );
+}
+
+#[test]
+fn test_create_offer_loaned_tc() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, _) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+        &pool_client.address,
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+    tc_client.set_loan_status(&0, &1);
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &1000000);
+
+    let res = pool_client.try_create_offer(
+        &offerer,
+        &token_client.address.clone(),
+        &600000,
+        &20000,
+        &tc_client.address,
+        &0,
+    );
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::TCAlreadyLoaned as u32
         )))
     );
 }
@@ -320,6 +415,7 @@ fn test_create_offer_nonexistent_tc() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
 
     // mint ext token to offerer
@@ -329,7 +425,8 @@ fn test_create_offer_nonexistent_tc() {
     let res = pool_client.try_create_offer(
         &offerer,
         &token_client.address.clone(),
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -343,7 +440,8 @@ fn test_create_offer_nonexistent_tc() {
     let res = pool_client.try_create_offer(
         &offerer,
         &token_client.address.clone(),
-        &1000000,
+        &600000,
+        &20000,
         &random_addr,
         &0,
     );
@@ -371,20 +469,24 @@ fn test_accept_offer() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
     // mint ext token to offerer
     token_admin_client.mint(&offerer, &1000000);
 
-    // create and accept the offer
+    // create the offer
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
+
+    // accept the offer
     pool_client.accept_offer(&supplier, &offer_id);
 
     //Test for the event
@@ -409,7 +511,56 @@ fn test_accept_offer() {
 
     let offer = pool_client.get_offer(&offer_id);
     assert_eq!(offer.status, 2);
-    assert_eq!(token_client.balance(&supplier), 1000000)
+    assert_eq!(pool_client.recipient(&offer_id), supplier);
+    assert_eq!(tc_client.loan_status(&0), 1);
+    assert_eq!(token_client.balance(&supplier), 600000)
+}
+
+#[test]
+fn test_accept_offer_already_loaned_tc() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, _) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+        &pool_client.address,
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &1000000);
+
+    // create the offer
+    let offer_id = pool_client.create_offer(
+        &offerer,
+        &token_client.address,
+        &600000,
+        &20000,
+        &tc_client.address,
+        &0,
+    );
+    tc_client.set_loan_status(&0, &1);
+    let res = pool_client.try_accept_offer(&supplier, &offer_id);
+    assert_eq!(
+        res,
+        Err(Ok(Error::from_contract_error(
+            ContractError::TCAlreadyLoaned as u32
+        )))
+    );
 }
 
 #[test]
@@ -449,6 +600,7 @@ fn test_accept_offer_not_tc_owner() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -460,7 +612,8 @@ fn test_accept_offer_not_tc_owner() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -492,6 +645,7 @@ fn test_expire_accepted_offer() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -502,7 +656,8 @@ fn test_expire_accepted_offer() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -557,6 +712,7 @@ fn test_expire_offer_as_admin() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -566,7 +722,8 @@ fn test_expire_offer_as_admin() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -597,6 +754,7 @@ fn test_expire_offer_as_owner() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -606,7 +764,8 @@ fn test_expire_offer_as_owner() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -655,6 +814,7 @@ fn test_expire_offer_not_owned() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -665,7 +825,8 @@ fn test_expire_offer_not_owned() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -699,6 +860,7 @@ fn test_accept_expired_offer() {
         &1712793295,
         &token_client.address,
         &token_client.decimals(),
+        &pool_client.address,
     );
     tc_client.mint_original(&supplier, &String::from_str(&e, ""));
 
@@ -709,7 +871,8 @@ fn test_accept_expired_offer() {
     let offer_id = pool_client.create_offer(
         &offerer,
         &token_client.address,
-        &1000000,
+        &600000,
+        &20000,
         &tc_client.address,
         &0,
     );
@@ -725,4 +888,95 @@ fn test_accept_expired_offer() {
             ContractError::OfferChanged as u32
         )))
     );
+}
+
+#[test]
+fn test_close_offer() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let admin = Address::generate(&e);
+    let buyer = Address::generate(&e);
+    let supplier = Address::generate(&e);
+    let offerer = Address::generate(&e);
+    let (token_client, token_admin_client) = setup_test_token(&e, &admin);
+    let (pool_client, contract_id) = setup_pool(&e, &admin);
+    pool_client.add_ext_token(&token_client.address);
+
+    // setup tc
+    let tc_client = setup_tc(
+        &e,
+        &admin,
+        &buyer,
+        &1000000,
+        &1712793295,
+        &token_client.address,
+        &token_client.decimals(),
+        &pool_client.address,
+    );
+    tc_client.mint_original(&supplier, &String::from_str(&e, ""));
+
+    // mint ext token to offerer
+    token_admin_client.mint(&offerer, &10000000000000);
+
+    // create the offer
+    let offer_id = pool_client.create_offer(
+        &offerer,
+        &token_client.address,
+        &(600000 * i128::pow(10, token_client.decimals())),
+        &(20000 * i128::pow(10, token_client.decimals())),
+        &tc_client.address,
+        &0,
+    );
+
+    // accept the offer
+    pool_client.accept_offer(&supplier, &offer_id);
+
+    // close the offer
+    pool_client.close_offer(&offer_id);
+    let offer = pool_client.get_offer(&offer_id);
+    assert_eq!(offer.status, 3);
+    assert_eq!(tc_client.loan_status(&0), 2);
+    assert_eq!(token_client.balance(&supplier), 980000 * 10000000);
+
+    //Test for the event
+    //Get the latest event
+    match e.events().all().last() {
+        Some((contract_address, topics, data)) => {
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, offer.remainder);
+
+            // Test the event contract address
+            assert_eq!(contract_address, contract_id.clone());
+
+            // Test the event topics
+            assert_eq!(
+                topics,
+                (symbol_short!("close"), offerer.clone(), offer.remainder).into_val(&e)
+            );
+
+            // Test the event data
+            let data_decoded: i128 = data.into_val(&e);
+            assert_eq!(data_decoded, offer_id);
+        }
+        None => panic!("The event is not published"),
+    }
+}
+
+#[test]
+fn test_upgrade() {
+    let e = Env::default();
+    e.mock_all_auths();
+
+    let admin = Address::generate(&e);
+    let contract_id = e.register(old_contract::WASM, ());
+    let client = old_contract::Client::new(&e, &contract_id);
+    client.initialize(&admin);
+    assert_eq!(client.admin(), admin);
+    assert_eq!(client.version(), 0);
+
+    let new_wasm = e.deployer().upload_contract_wasm(new_contract::WASM);
+    client.upgrade(&new_wasm);
+    assert_eq!(client.admin(), admin);
+    assert_eq!(client.version(), 2);
 }
