@@ -37,6 +37,26 @@ pub fn write_sub_tc(env: &Env, id: i128, parent: i128, depth: u32, amount: u32) 
     }
 }
 
+pub fn update_sub_tc_amount(env: &Env, id: i128, amount: u32) {
+    let key = DataKey::SubTCInfo(id);
+    match env.storage().persistent().get::<DataKey, SubTC>(&key) {
+        Some(_) => {
+            let sub_tc = SubTC {
+                parent: 0,
+                depth: 0,
+                amount,
+            };
+            env.storage().persistent().set(&key, &sub_tc);
+            env.storage().persistent().extend_ttl(
+                &key,
+                BALANCE_LIFETIME_THRESHOLD,
+                BALANCE_BUMP_AMOUNT,
+            );
+        }
+        None => panic_with_error!(env, Error::NotFound),
+    }
+}
+
 pub fn read_sub_tc_disabled(env: &Env, id: i128) -> bool {
     let key = DataKey::Disabled(id);
     match env.storage().persistent().get::<DataKey, bool>(&key) {

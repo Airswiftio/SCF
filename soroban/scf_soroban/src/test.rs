@@ -557,18 +557,22 @@ fn test_expire_auto_transfer() {
             },
         ],
     );
-    client.sign_off(&4);
+    client.reject(&4);
     assert_eq!(to2, client.owner(&1));
     assert_eq!(client.address, client.owner(&2));
+    assert_eq!(400000, client.amount(&3));
     assert_eq!(to, client.owner(&3));
-    assert_eq!(to3, client.owner(&4));
+    assert_eq!(true, client.is_disabled(&4));
     assert_eq!(client.address, client.owner(&5));
+    assert_eq!(350000, client.amount(&6));
     assert_eq!(to2, client.owner(&6));
 
     set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
     assert_eq!(client.check_expired(), true);
-    assert_eq!(to, client.owner(&2));
-    assert_eq!(to2, client.owner(&5));
+    assert_eq!(true, client.is_disabled(&2));
+    assert_eq!(500000, client.amount(&3));
+    assert_eq!(true, client.is_disabled(&5));
+    assert_eq!(500000, client.amount(&6));
 }
 
 #[test]
@@ -635,6 +639,33 @@ fn test_sign_off() {
     assert_eq!(to, client.recipient(&1));
     client.sign_off(&1);
     assert_eq!(to, client.owner(&1));
+}
+
+#[test]
+fn test_reject() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let buyer = Address::generate(&env);
+    let client = setup_test_token(&env, &admin, &buyer);
+
+    let from = Address::generate(&env);
+    let to = Address::generate(&env);
+    client.mint_original(&from, &String::from_str(&env, "a"));
+    assert_eq!(from, client.owner(&0));
+
+    let split_req = SplitRequest {
+        amount: 600000,
+        to: to.clone(),
+    };
+    client.split(&0, &vec![&env, split_req.clone()]);
+    assert_eq!(client.address, client.owner(&1));
+    assert_eq!(to, client.recipient(&1));
+    assert_eq!(400000, client.amount(&2));
+    client.reject(&1);
+    assert_eq!(client.address, client.owner(&1));
+    assert_eq!(true, client.is_disabled(&1));
+    assert_eq!(1000000, client.amount(&2));
 }
 
 #[test]

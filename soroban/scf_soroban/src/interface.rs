@@ -89,6 +89,9 @@ pub trait TokenizedCertificateTrait {
     /// Emit event with topics = ["transfer", from: Address, to: Address], data = [id: i128]
     fn sign_off(env: Env, id: i128);
 
+    /// rejects the split request, returning the funds to the portion of the TC belonging to the original owner
+    fn reject(env: Env, id: i128);
+
     /// pay off OrderInfo.amount using token
     fn pay_off(env: Env, from: Address);
 
@@ -104,5 +107,11 @@ pub trait TokenizedCertificateTrait {
     /// "buyer_address" specifies the account that will perform the pay-off step later.
     /// "total_amount" corresponds to the USD value of the invoice.
     /// "end_time" is a Unix timestamp. It specifies the maturity date of the invoice, after which the tokenized certificates can be redeemed for USDC or other tokens.
-    fn __constructor(e: Env, admin: Address, buyer_address: Address, total_amount: u32, end_time: u64);
+    fn __constructor(
+        e: Env,
+        admin: Address,
+        buyer_address: Address,
+        total_amount: u32,
+        end_time: u64,
+    );
 }

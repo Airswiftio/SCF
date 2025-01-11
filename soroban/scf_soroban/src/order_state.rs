@@ -1,10 +1,12 @@
 use crate::balance::read_supply;
-use crate::event;
 
 use crate::order_info::read_order_info;
-use crate::owner::{read_owner, write_owner};
+use crate::owner::read_owner;
+use crate::remainder::{has_remainder, read_remainder};
 use crate::storage_types::{DataKey, BALANCE_BUMP_AMOUNT, BALANCE_LIFETIME_THRESHOLD};
-use crate::sub_tc::read_sub_tc;
+use crate::sub_tc::{
+    read_sub_tc, read_sub_tc_disabled, update_sub_tc_amount, write_sub_tc_disabled,
+};
 use soroban_sdk::Env;
 
 pub fn update_and_read_expired(env: &Env) -> bool {
@@ -16,17 +18,22 @@ pub fn update_and_read_expired(env: &Env) -> bool {
     let expired = ledger.timestamp() >= read_order_info(&env).end_time;
     if expired {
         write_expired(&env, true);
-        // transfer unclaimed TCs to the root TC's owner address
+        // find unclaimed TCs (TCs owned by the contract)
         let last_id = read_supply(&env);
         if last_id > 0 {
             let contract_addr = &env.current_contract_address();
             for i in 1..last_id {
-                let parent_id = read_sub_tc(&env, i).parent;
-                let to = read_owner(&env, parent_id);
+                let sub_tc = read_sub_tc(&env, i);
                 let owner = read_owner(&env, i);
-                if owner == contract_addr.clone() {
-                    write_owner(&env, i, Some(to.clone()));
-                    event::transfer(&env, contract_addr.clone(), to.clone(), i);
+                // Set unclaimed TCs to disabled, and add their value to the parent's associated remainder TC
+                if owner == contract_addr.clone() && !read_sub_tc_disabled(&env, i) {
+                    let mut target = sub_tc.parent;
+                    while has_remainder(&env, target) {
+                        target = read_remainder(&env, target);
+                    }
+                    let target_tc = read_sub_tc(&env, target);
+                    update_sub_tc_amount(&env, target, target_tc.amount + sub_tc.amount);
+                    write_sub_tc_disabled(&env, i, true);
                 }
             }
         }

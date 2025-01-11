@@ -23,6 +23,7 @@ pub enum DataKey {
     Recipient(i128),
     LoanStatus(i128),
     LoanContract,
+    Remainder(i128),
 }
 
 #[derive(Clone)]

@@ -13,8 +13,11 @@ use crate::owner::{
     add_vc, check_owner, read_all_owned, read_owner, read_recipient, read_vc, write_owner,
     write_recipient, write_vc,
 };
+use crate::remainder::{has_remainder, read_remainder, write_remainder};
 use crate::storage_types::{SplitRequest, INSTANCE_BUMP_AMOUNT, INSTANCE_LIFETIME_THRESHOLD};
-use crate::sub_tc::{read_sub_tc, read_sub_tc_disabled, write_sub_tc, write_sub_tc_disabled};
+use crate::sub_tc::{
+    read_sub_tc, read_sub_tc_disabled, update_sub_tc_amount, write_sub_tc, write_sub_tc_disabled,
+};
 use soroban_sdk::{
     contract, contractimpl, panic_with_error, token, vec, Address, Env, String, Vec,
 };
@@ -248,17 +251,18 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
             remaining -= req.amount;
         }
 
-        // if root amount > 0, create another sub tc to represent the remaining amount belonging to original owner
-        if remaining > 0 {
-            let new_id = read_supply(&env);
-            write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
-            write_sub_tc_disabled(&env, new_id, false);
-            write_loan_status(&env, new_id, 0);
-            write_owner(&env, new_id, Some(owner.clone()));
-            write_vc(&env, new_id, vec![&env]);
-            increment_supply(&env);
-            new_ids.push_back(new_id);
-        }
+        // create another sub tc to represent the remaining amount belonging to original owner (even if the remaining amount is 0)
+        let new_id = read_supply(&env);
+        write_sub_tc(&env, new_id, id, parent.depth + 1, remaining);
+        write_sub_tc_disabled(&env, new_id, false);
+        write_loan_status(&env, new_id, 0);
+        write_owner(&env, new_id, Some(owner.clone()));
+        write_vc(&env, new_id, vec![&env]);
+        increment_supply(&env);
+        new_ids.push_back(new_id);
+
+        // set "remainder" target so that it is possible to find this TC using the original parent id
+        write_remainder(&env, id, new_id);
 
         // disable the original TC
         write_sub_tc_disabled(&env, id, true);
@@ -343,6 +347,27 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         write_owner(&env, id, Some(recipient.clone()));
 
         event::transfer(&env, owner, recipient, id);
+    }
+
+    fn reject(env: Env, id: i128) {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+
+        let expired = update_and_read_expired(&env);
+        let owner = read_owner(&env, id);
+        if owner != env.current_contract_address() || read_sub_tc_disabled(&env, id) || expired {
+            panic_with_error!(&env, Error::NotPermitted);
+        }
+
+        let sub_tc = read_sub_tc(&env, id);
+        let mut target = sub_tc.parent;
+        while has_remainder(&env, target) {
+            target = read_remainder(&env, target);
+        }
+        let target_tc = read_sub_tc(&env, target);
+        update_sub_tc_amount(&env, target, target_tc.amount + sub_tc.amount);
+        write_sub_tc_disabled(&env, id, true);
     }
 
     fn pay_off(env: Env, from: Address) {
