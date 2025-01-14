@@ -294,6 +294,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         client.transfer(&env.current_contract_address(), &owner, &amount);
 
         // burn the token
+        write_sub_tc_disabled(&env, id, true);
         write_owner(&env, id, None);
 
         event::redeem(&env, owner, id);
