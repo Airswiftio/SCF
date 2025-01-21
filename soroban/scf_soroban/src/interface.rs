@@ -31,7 +31,7 @@ pub trait TokenizedCertificateTrait {
     // --------------------------------------------------------------------------------
 
     /// Get the amount associated with "id".
-    fn amount(env: Env, id: i128) -> u32;
+    fn amount(env: Env, id: i128) -> i128;
 
     /// Get the parent id of "id" token.
     fn parent(env: Env, id: i128) -> i128;
@@ -78,9 +78,6 @@ pub trait TokenizedCertificateTrait {
     /// use env timestamp and check against stored expiry time
     fn check_expired(env: Env) -> bool;
 
-    /// set the contract address for the external token (e.g. USDC)
-    fn set_external_token_provider(env: Env, contract_addr: Address, decimals: u32);
-
     /// retrieves a pending split request for a given token "id"
     fn recipient(env: Env, id: i128) -> Address;
 
@@ -98,6 +95,12 @@ pub trait TokenizedCertificateTrait {
     /// Update the VC associated with a token. Can only be called by the admin.
     fn add_vc(env: Env, id: i128, vc: String);
 
+    /// Get the loan contract address.
+    fn loan_contract(env: Env) -> Address;
+
+    /// Get the external token address.
+    fn ext_token(env: Env) -> Address;
+
     // --------------------------------------------------------------------------------
     // Implementation Interface
     // --------------------------------------------------------------------------------
@@ -105,13 +108,15 @@ pub trait TokenizedCertificateTrait {
     /// Initialize the contract.
     /// "admin" is the contract administrator.
     /// "buyer_address" specifies the account that will perform the pay-off step later.
-    /// "total_amount" corresponds to the USD value of the invoice.
+    /// "total_amount" corresponds to the amount, expressed in ext_token * 10^(ext_token.decimals).
     /// "end_time" is a Unix timestamp. It specifies the maturity date of the invoice, after which the tokenized certificates can be redeemed for USDC or other tokens.
+    /// "ext_token_address" is the address of the external token contract.
     fn __constructor(
         e: Env,
         admin: Address,
         buyer_address: Address,
-        total_amount: u32,
+        total_amount: i128,
         end_time: u64,
+        ext_token_address: Address,
     );
 }

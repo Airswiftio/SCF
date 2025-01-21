@@ -48,20 +48,21 @@ pub fn setup_tc<'a>(
     e: &Env,
     admin: &Address,
     buyer: &Address,
-    total_amount: &u32,
+    total_amount: &i128,
     end_time: &u64,
     ext_token_address: &Address,
-    ext_token_decimals: &u32,
     loan_contract: &Address,
 ) -> tc_contract::Client<'a> {
     let wasm_hash = e.deployer().upload_contract_wasm(tc_contract::WASM);
     let addr = e
         .deployer()
         .with_address(admin.clone(), BytesN::<32>::random(&e))
-        .deploy_v2(wasm_hash, (admin, buyer, total_amount, end_time));
+        .deploy_v2(
+            wasm_hash,
+            (admin, buyer, total_amount, end_time, ext_token_address),
+        );
 
     let client = tc_contract::Client::new(e, &addr);
-    client.set_external_token_provider(ext_token_address, ext_token_decimals);
     client.set_loan_contract(loan_contract);
     client
 }

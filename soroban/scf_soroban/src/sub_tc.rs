@@ -17,7 +17,7 @@ pub fn read_sub_tc(env: &Env, id: i128) -> SubTC {
     }
 }
 
-pub fn write_sub_tc(env: &Env, id: i128, parent: i128, depth: u32, amount: u32) {
+pub fn write_sub_tc(env: &Env, id: i128, parent: i128, depth: u32, amount: i128) {
     let key = DataKey::SubTCInfo(id);
     match env.storage().persistent().get::<DataKey, SubTC>(&key) {
         Some(_) => panic_with_error!(env, Error::NotEmpty),
@@ -37,7 +37,7 @@ pub fn write_sub_tc(env: &Env, id: i128, parent: i128, depth: u32, amount: u32) 
     }
 }
 
-pub fn update_sub_tc_amount(env: &Env, id: i128, amount: u32) {
+pub fn update_sub_tc_amount(env: &Env, id: i128, amount: i128) {
     let key = DataKey::SubTCInfo(id);
     match env.storage().persistent().get::<DataKey, SubTC>(&key) {
         Some(_) => {

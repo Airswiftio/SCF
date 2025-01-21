@@ -8,12 +8,21 @@ pub fn setup_test_token<'a>(
     admin: &Address,
     buyer: &Address,
 ) -> TokenizedCertificateClient<'a> {
-    let total_amount: u32 = 1000000;
+    let total_amount: i128 = 1000000;
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
+    let ext_token_addr = &env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
 
     let contract_id = env.register(
         TokenizedCertificate,
-        TokenizedCertificateArgs::__constructor(admin, buyer, &total_amount, &end_time),
+        TokenizedCertificateArgs::__constructor(
+            admin,
+            buyer,
+            &total_amount,
+            &end_time,
+            &ext_token_addr,
+        ),
     );
     let client = TokenizedCertificateClient::new(env, &contract_id);
 

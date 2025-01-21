@@ -126,7 +126,7 @@ impl OfferPoolTrait for OfferPool {
         }
 
         // TODO: this only works if the TC amount is expressed in the same currency as the ext_token.
-        let tc_amount = i128::from(tc_client.amount(&tc_id)) * 10i128.pow(token_client.decimals());
+        let tc_amount = tc_client.amount(&tc_id);
         let remainder = tc_amount - amount - fee;
         if remainder < 0 {
             panic_with_error!(&e, Error::InvalidAmount);

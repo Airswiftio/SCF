@@ -15,12 +15,21 @@ fn test_initialize() {
 
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
-    let total_amount: u32 = 1000000;
+    let total_amount: i128 = 1000000;
     let end_time = 1672531200; // 2023-01-01 00:00:00 UTC+0
+    let ext_token_addr = &env
+        .register_stellar_asset_contract_v2(admin.clone())
+        .address();
 
     let contract_id = env.register(
         TokenizedCertificate,
-        TokenizedCertificateArgs::__constructor(&admin, &buyer, &total_amount, &end_time),
+        TokenizedCertificateArgs::__constructor(
+            &admin,
+            &buyer,
+            &total_amount,
+            &end_time,
+            &ext_token_addr,
+        ),
     );
     let client = TokenizedCertificateClient::new(&env, &contract_id);
 
@@ -418,8 +427,8 @@ fn test_split_nested_depth_limit() {
     client.mint_original(&to, &String::from_str(&env, "a"));
     assert_eq!(1000000, client.amount(&0));
 
-    // first 5 splits should succeed, 6th split should fail
-    for i in 0..6 {
+    // first 10 splits should succeed
+    for i in 0..10 {
         let parent_id = i * 2;
         let res = client.try_split(
             &parent_id,
@@ -485,15 +494,11 @@ fn test_pay_off() {
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
+    let ext_token_addr = client.ext_token();
 
-    // setup fake external token
-    let ext_token_addr = &env
-        .register_stellar_asset_contract_v2(admin.clone())
-        .address();
-    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&buyer, &10000000000000);
+    let ext_admin = StellarAssetClient::new(&env, &ext_token_addr);
+    ext_admin.mint(&buyer, &1000000);
 
-    client.set_external_token_provider(&ext_token_addr, &7);
     assert_eq!(client.check_paid(), false);
 
     client.pay_off(&buyer);
@@ -583,14 +588,11 @@ fn test_redeem() {
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
+    let ext_token_addr = client.ext_token();
 
-    // setup fake external token and pay the contract
-    let ext_token_addr = &env
-        .register_stellar_asset_contract_v2(admin.clone())
-        .address();
-    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&buyer, &10000000000000);
-    let ext_client = TokenClient::new(&env, ext_token_addr);
+    let ext_admin = StellarAssetClient::new(&env, &ext_token_addr);
+    ext_admin.mint(&buyer, &1000000);
+    let ext_client = TokenClient::new(&env, &ext_token_addr);
     ext_client.mock_all_auths_allowing_non_root_auth();
 
     let supplier = Address::generate(&env);
@@ -598,7 +600,6 @@ fn test_redeem() {
     assert_eq!(supplier, client.owner(&0));
 
     // setup preconditions, and redeem should fail before all preconditions are met
-    client.set_external_token_provider(&ext_token_addr, &7);
     assert_eq!(client.try_redeem(&0).is_err(), true);
     client.check_paid();
     assert_eq!(client.try_redeem(&0).is_err(), true);
@@ -611,7 +612,7 @@ fn test_redeem() {
     client.redeem(&0);
 
     // check balance was transferred
-    assert_eq!(ext_client.balance(&supplier), 10000000000000);
+    assert_eq!(ext_client.balance(&supplier), 1000000);
 
     // check TC was burned
     assert_eq!(client.try_owner(&0).is_err(), true)
@@ -714,21 +715,18 @@ fn test_redeem_loaned() {
     let admin = Address::generate(&env);
     let buyer = Address::generate(&env);
     let client = setup_test_token(&env, &admin, &buyer);
+    let ext_token_addr = client.ext_token();
 
     // setup fake external token and pay the contract
-    let ext_token_addr = &env
-        .register_stellar_asset_contract_v2(admin.clone())
-        .address();
-    let ext_admin = StellarAssetClient::new(&env, ext_token_addr);
-    ext_admin.mint(&buyer, &10000000000000);
-    let ext_client = TokenClient::new(&env, ext_token_addr);
+    let ext_admin = StellarAssetClient::new(&env, &ext_token_addr);
+    ext_admin.mint(&buyer, &1000000);
+    let ext_client = TokenClient::new(&env, &ext_token_addr);
     ext_client.mock_all_auths_allowing_non_root_auth();
 
     let supplier = Address::generate(&env);
     client.mint_original(&supplier, &String::from_str(&env, "a"));
     assert_eq!(supplier, client.owner(&0));
 
-    client.set_external_token_provider(&ext_token_addr, &7);
     set_ledger_timestamp(&env, 1672617600); // 2023-01-02 00:00:00 UTC +0
     client.pay_off(&buyer);
     assert!(client.check_paid());
@@ -750,7 +748,7 @@ fn test_redeem_loaned() {
     client.redeem(&0);
 
     // check balance was transferred
-    assert_eq!(ext_client.balance(&supplier), 10000000000000);
+    assert_eq!(ext_client.balance(&supplier), 1000000);
 
     // check TC was burned
     assert_eq!(client.try_owner(&0).is_err(), true)

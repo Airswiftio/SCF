@@ -5,11 +5,11 @@ use soroban_sdk::{contracttype, panic_with_error, Address, Env};
 #[derive(Clone)]
 pub struct TokenOrderInfo {
     pub buyer_address: Address,
-    pub total_amount: u32,
+    pub total_amount: i128,
     pub end_time: u64,
 }
 
-pub fn write_order_info(env: &Env, buyer_address: Address, total_amount: u32, end_time: u64) {
+pub fn write_order_info(env: &Env, buyer_address: Address, total_amount: i128, end_time: u64) {
     let key = DataKey::OrderInfo;
     let order_info = TokenOrderInfo {
         buyer_address,

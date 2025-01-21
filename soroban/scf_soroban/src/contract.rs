@@ -31,16 +31,21 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         e: Env,
         admin: Address,
         buyer_address: Address,
-        total_amount: u32,
+        total_amount: i128,
         end_time: u64,
+        ext_token_address: Address,
     ) {
         if end_time <= e.ledger().timestamp() {
             panic_with_error!(&e, Error::NotPermitted);
         }
+        if total_amount <= 0 {
+            panic_with_error!(&e, Error::InvalidArgs);
+        }
+        let ext_token_decimals = token::Client::new(&e, &ext_token_address).decimals();
+
         write_administrator(&e, &admin);
-        //write_name(&e, &name);
-        //write_symbol(&e, &symbol);
         write_order_info(&e, buyer_address, total_amount, end_time);
+        write_external_token(&e, ext_token_address, ext_token_decimals);
     }
 
     fn admin(env: Env) -> Address {
@@ -59,6 +64,20 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
 
         write_administrator(&env, &new_admin);
         event::set_admin(&env, admin, new_admin);
+    }
+
+    fn ext_token(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_external_token(&env).contract_addr
+    }
+
+    fn loan_contract(env: Env) -> Address {
+        env.storage()
+            .instance()
+            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
+        read_loan_contract(&env)
     }
 
     fn set_loan_contract(env: Env, contract_addr: Address) {
@@ -94,7 +113,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         event::loan(&env, id, status);
     }
 
-    fn amount(env: Env, id: i128) -> u32 {
+    fn amount(env: Env, id: i128) -> i128 {
         env.storage()
             .instance()
             .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
@@ -216,7 +235,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let contract_addr = env.current_contract_address();
 
         let parent = read_sub_tc(&env, id);
-        if parent.depth >= 5 {
+        if parent.depth >= 10 {
             panic_with_error!(&env, Error::SplitLimitReached);
         }
         let mut sum = 0;
@@ -290,7 +309,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let sub_tc = read_sub_tc(&env, id);
         let ext_token = read_external_token(&env);
         let client = token::Client::new(&env, &ext_token.contract_addr);
-        let amount = i128::from(sub_tc.amount) * 10i128.pow(ext_token.decimals);
+        let amount = sub_tc.amount;
         client.transfer(&env.current_contract_address(), &owner, &amount);
 
         // burn the token
@@ -298,16 +317,6 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         write_owner(&env, id, None);
 
         event::redeem(&env, owner, id);
-    }
-
-    fn set_external_token_provider(env: Env, contract_addr: Address, decimals: u32) {
-        env.storage()
-            .instance()
-            .extend_ttl(INSTANCE_LIFETIME_THRESHOLD, INSTANCE_BUMP_AMOUNT);
-        let admin = read_administrator(&env);
-        admin.require_auth();
-
-        write_external_token(&env, contract_addr, decimals);
     }
 
     fn check_paid(env: Env) -> bool {
@@ -383,7 +392,7 @@ impl TokenizedCertificateTrait for TokenizedCertificate {
         let ext_token = read_external_token(&env);
         let client = token::Client::new(&env, &ext_token.contract_addr);
         let order_info = read_order_info(&env);
-        let amount = i128::from(order_info.total_amount) * 10i128.pow(ext_token.decimals);
+        let amount = order_info.total_amount;
 
         if from != order_info.buyer_address {
             panic_with_error!(&env, Error::NotAuthorized);

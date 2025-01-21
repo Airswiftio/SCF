@@ -31,13 +31,13 @@ pub enum DataKey {
 pub struct SubTC {
     pub parent: i128,
     pub depth: u32,
-    pub amount: u32,
+    pub amount: i128,
 }
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SplitRequest {
-    pub amount: u32,
+    pub amount: i128,
     pub to: Address,
 }
 
