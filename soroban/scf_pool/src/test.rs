@@ -961,5 +961,5 @@ fn test_upgrade() {
     let new_wasm = e.deployer().upload_contract_wasm(new_contract::WASM);
     client.upgrade(&new_wasm);
     assert_eq!(client.admin(), admin);
-    assert_eq!(client.version(), 2);
+    assert_eq!(client.version(), 3);
 }

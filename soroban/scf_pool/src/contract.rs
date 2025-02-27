@@ -27,7 +27,7 @@ impl OfferPoolTrait for OfferPool {
     }
 
     fn version() -> u32 {
-        2
+        3
     }
 
     fn upgrade(e: Env, new_wasm_hash: BytesN<32>) {
@@ -164,10 +164,15 @@ impl OfferPoolTrait for OfferPool {
                 if offer.status != 0 {
                     panic_with_error!(&e, Error::OfferChanged);
                 }
-                // check that 'from' matches either the admin or the offer owner
+                // check that 'from' matches either the admin, the offer owner, or the current owner of the TC
                 let admin = read_administrator(&e);
+
                 let offer_from = offer.from;
-                if (from != admin) && (from != offer_from) {
+                let tc_client = tc::Client::new(&e, &offer.tc_contract);
+                if (from != admin)
+                    && (from != offer_from)
+                    && (from != tc_client.owner(&offer.tc_id))
+                {
                     panic_with_error!(&e, Error::NotAuthorized);
                 }
 
